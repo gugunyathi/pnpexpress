@@ -58,7 +58,7 @@ type SubViewType =
   | 'saved-addresses'
   | 'comm-prefs'
   | 'delete-account'
-  | 'ziki'
+  | 'Tenga'
   | 'bank-cards'
   | 'wallet'
   | 'credits-returns'
@@ -87,7 +87,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     primaryLocation: 'Sandton, Johannesburg, SA',
     recipientCity: 'Harare, Zimbabwe',
     language: 'Shona',
-    memberId: 'ZIKI-SA-88421',
+    memberId: 'TENGA-SA-88421',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
   });
 
@@ -176,8 +176,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     { id: 'log-4', type: 'Grocery Order #ZKS-7740', date: '10 Jul 2026', amount: '- $62.10', method: 'Pick n Pay Bulawayo', status: 'Completed' },
   ]);
 
-  // Ziki Points State
-  const [zikiPoints, setZikiPoints] = useState(4850);
+  // Tenga Points State
+  const [tengaPoints, settengaPoints] = useState(4850);
 
   // Credits & Returns State
   const [creditsBalanceUSD] = useState(15.00);
@@ -221,17 +221,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       },
       ...prev
     ]);
-    showToast(`Successfully added $${amt.toFixed(2)} to Zikishop Wallet! 💵`);
+    showToast(`Successfully added $${amt.toFixed(2)} to TENGA Wallet! 💵`);
   };
 
   const handleRedeemVoucher = (pts: number, valUSD: number) => {
-    if (zikiPoints < pts) {
-      showToast('Insufficient Ziki Points to redeem this voucher');
+    if (tengaPoints < pts) {
+      showToast('Insufficient Tenga Points to redeem this voucher');
       return;
     }
-    setZikiPoints((prev) => prev - pts);
+    settengaPoints((prev) => prev - pts);
     setWalletBalanceUSD((prev) => prev + valUSD);
-    showToast(`Redeemed ${pts} Ziki Points for $${valUSD} Grocery Voucher! 🎉`);
+    showToast(`Redeemed ${pts} Tenga Points for $${valUSD} Grocery Voucher! 🎉`);
   };
 
   const handleAddAddress = () => {
@@ -341,7 +341,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </button>
 
             <span className="text-xs font-black text-[#1a115e] uppercase tracking-wider hidden sm:inline">
-              Zikishop Account Services
+              TENGA Account Services
             </span>
           </div>
 
@@ -604,7 +604,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-stone-900 text-lg">Request Account Deletion</h3>
-                  <p className="text-xs text-stone-500">Permanently close your Zikishop account and unlink family members</p>
+                  <p className="text-xs text-stone-500">Permanently close your TENGA account and unlink family members</p>
                 </div>
               </div>
 
@@ -614,7 +614,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   Warning: Irreversible Action
                 </span>
                 <p>
-                  Deleting your account will forfeit your <strong>4,850 Ziki Loyalty Points ($48.50 value)</strong>, unlink your Moyo Family Shared Cart, and clear saved address presets.
+                  Deleting your account will forfeit your <strong>4,850 Tenga Loyalty Points ($48.50 value)</strong>, unlink your Moyo Family Shared Cart, and clear saved address presets.
                 </p>
               </div>
 
@@ -663,7 +663,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 type="button"
                 disabled={!deleteConfirmed}
                 onClick={() => {
-                  showToast('Account deletion request submitted to Zikishop Compliance.');
+                  showToast('Account deletion request submitted to TENGA Compliance.');
                   setActiveSubView(null);
                 }}
                 className={`w-full py-3 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-2 ${
@@ -678,8 +678,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           )}
 
-          {/* 5. ZIKI VIEW */}
-          {activeSubView === 'ziki' && (
+          {/* 5. Tenga VIEW */}
+          {activeSubView === 'Tenga' && (
             <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/80 shadow-xs space-y-5">
               <div className="bg-gradient-to-r from-[#1a115e] to-[#2e1d9e] text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-[#3b2aae]">
                 <div className="flex items-center gap-3">
@@ -688,7 +688,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </div>
                   <div>
                     <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
-                      <span>Ziki AI Shopping Assistant</span>
+                      <span>Tenga AI Shopping Assistant</span>
                       <span className="bg-[#ff4f38] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
                         Gold Sponsor Tier
                       </span>
@@ -699,8 +699,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
                 <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-center self-end sm:self-auto">
                   <span className="text-[10px] text-amber-300 font-bold block uppercase">Points Balance</span>
-                  <span className="font-black text-amber-300 text-xl">{zikiPoints.toLocaleString()} pts</span>
-                  <span className="text-[10px] text-blue-200 block font-semibold">(${(zikiPoints / 100).toFixed(2)} USD Value)</span>
+                  <span className="font-black text-amber-300 text-xl">{tengaPoints.toLocaleString()} pts</span>
+                  <span className="text-[10px] text-blue-200 block font-semibold">(${(tengaPoints / 100).toFixed(2)} USD Value)</span>
                 </div>
               </div>
 
@@ -708,7 +708,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="space-y-3">
                 <h4 className="font-extrabold text-stone-900 text-sm flex items-center gap-2">
                   <Gift className="w-4 h-4 text-amber-600" />
-                  <span>Redeem Ziki Points for Grocery Vouchers</span>
+                  <span>Redeem Tenga Points for Grocery Vouchers</span>
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -720,7 +720,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <div key={v.pts} className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2 flex flex-col justify-between">
                       <div>
                         <span className="font-extrabold text-[#1a115e] text-sm block">{v.title}</span>
-                        <span className="text-xs text-amber-700 font-bold block mt-1">{v.pts} Ziki Points</span>
+                        <span className="text-xs text-amber-700 font-bold block mt-1">{v.pts} Tenga Points</span>
                       </div>
                       <button
                         type="button"
@@ -738,14 +738,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-2">
                 <span className="font-extrabold text-amber-900 text-xs flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-amber-600" />
-                  Ziki Smart Replenishment Tip
+                  Tenga Smart Replenishment Tip
                 </span>
                 <p className="text-xs text-amber-900 leading-snug">
-                  Based on past order cycles, Gogo Moyo in Harare will need <strong>Tastic Rice 10kg</strong> in 3 days. Would you like Ziki to auto-add it to your cart with a 5% Ziki discount?
+                  Based on past order cycles, Gogo Moyo in Harare will need <strong>Tastic Rice 10kg</strong> in 3 days. Would you like Tenga to auto-add it to your cart with a 5% Tenga discount?
                 </p>
                 <button
                   type="button"
-                  onClick={() => showToast('Added Tastic Rice 10kg with 5% Ziki Discount!')}
+                  onClick={() => showToast('Added Tastic Rice 10kg with 5% Tenga Discount!')}
                   className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer inline-block"
                 >
                   Auto-Add Tastic Rice
@@ -969,7 +969,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <p className="text-xs text-emerald-800">Instant chat with our diaspora team in Johannesburg & Harare</p>
                   <button
                     type="button"
-                    onClick={() => showToast('Opening Zikishop WhatsApp Support Chat...')}
+                    onClick={() => showToast('Opening TENGA WhatsApp Support Chat...')}
                     className="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl cursor-pointer"
                   >
                     Open WhatsApp
@@ -996,7 +996,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <Mail className="w-4 h-4 text-[#1a115e]" />
                     Email Support
                   </span>
-                  <p className="text-xs text-stone-600">support@zikishop.com (Guaranteed response in 2 hrs)</p>
+                  <p className="text-xs text-stone-600">support@tenga.com (Guaranteed response in 2 hrs)</p>
                   <button
                     type="button"
                     onClick={() => showToast('Ticket draft created!')}
@@ -1034,7 +1034,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <Star className="w-6 h-6 fill-amber-500 text-amber-500" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-stone-900 text-lg">Rate Your Zikishop Experience</h3>
+                  <h3 className="font-extrabold text-stone-900 text-lg">Rate Your TENGA Experience</h3>
                   <p className="text-xs text-stone-500">Your feedback helps us improve SA-to-ZIM cross-border grocery delivery</p>
                 </div>
               </div>
@@ -1046,7 +1046,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </div>
                   <h4 className="font-black text-emerald-900 text-base">Tatenda! Thank you for rating us!</h4>
                   <p className="text-xs text-emerald-800 max-w-sm mx-auto">
-                    We’ve credited <strong>+100 Bonus Ziki Points</strong> to your account for leaving a review.
+                    We’ve credited <strong>+100 Bonus Tenga Points</strong> to your account for leaving a review.
                   </p>
                 </div>
               ) : (
@@ -1111,8 +1111,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     type="button"
                     onClick={() => {
                       setRatingSubmitted(true);
-                      setZikiPoints((p) => p + 100);
-                      showToast('Submitted review! +100 Ziki Points added!');
+                      settengaPoints((p) => p + 100);
+                      showToast('Submitted review! +100 Tenga Points added!');
                     }}
                     className="w-full bg-[#ff4f38] hover:bg-[#e03e28] text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow cursor-pointer"
                   >
@@ -1132,13 +1132,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-stone-900 text-lg">Terms & Conditions</h3>
-                  <p className="text-xs text-stone-500">Last updated: July 2026 • Zikishop Cross-Border Technologies</p>
+                  <p className="text-xs text-stone-500">Last updated: July 2026 • TENGA Cross-Border Technologies</p>
                 </div>
               </div>
 
               <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                 <h4 className="font-extrabold text-stone-900 text-sm">1. Service Overview</h4>
-                <p>Zikishop facilitates cross-border grocery ordering and store depot pick-up between South Africa, the United Kingdom, and Zimbabwe. All grocery fulfillment is guaranteed through authorized supermarket partners in Zimbabwe (OK Zimbabwe, Pick n Pay, SPAR).</p>
+                <p>TENGA facilitates cross-border grocery ordering and store depot pick-up between South Africa, the United Kingdom, and Zimbabwe. All grocery fulfillment is guaranteed through authorized supermarket partners in Zimbabwe (OK Zimbabwe, Pick n Pay, SPAR).</p>
 
                 <h4 className="font-extrabold text-stone-900 text-sm">2. Payments & Currency Rates</h4>
                 <p>Payments made via EcoCash, Mukuru, FNB, or Nedbank cards are processed in real-time according to official bank exchange rates. All wallet top-ups are non-expiring and redeemable for goods across all partner depots.</p>
@@ -1206,7 +1206,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             </div>
 
-            {/* Wallet & Ziki Quick Pill */}
+            {/* Wallet & Tenga Quick Pill */}
             <div className="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/15 flex items-center gap-4 text-xs font-bold self-end sm:self-auto">
               <div>
                 <span className="text-[10px] text-blue-200 block uppercase font-semibold">Wallet</span>
@@ -1214,8 +1214,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
               <div className="h-6 w-[1px] bg-white/20" />
               <div>
-                <span className="text-[10px] text-amber-300 block uppercase font-semibold">Ziki Points</span>
-                <span className="font-black text-amber-300 text-sm">{zikiPoints.toLocaleString()}</span>
+                <span className="text-[10px] text-amber-300 block uppercase font-semibold">Tenga Points</span>
+                <span className="font-black text-amber-300 text-sm">{tengaPoints.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -1292,10 +1292,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <h3 className="font-black text-stone-900 text-base sm:text-lg px-1">My Shopping</h3>
 
             <div className="space-y-2.5">
-              {/* 1. Ziki */}
+              {/* 1. Tenga */}
               <button
                 type="button"
-                onClick={() => setActiveSubView('ziki')}
+                onClick={() => setActiveSubView('Tenga')}
                 className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3.5">
@@ -1303,8 +1303,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="font-extrabold text-stone-900 text-sm sm:text-base block">Ziki</span>
-                    <span className="text-[11px] text-amber-700 font-bold block">{zikiPoints.toLocaleString()} Points Available</span>
+                    <span className="font-extrabold text-stone-900 text-sm sm:text-base block">Tenga</span>
+                    <span className="text-[11px] text-amber-700 font-bold block">{tengaPoints.toLocaleString()} Points Available</span>
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
@@ -1689,7 +1689,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
               <LogOut className="w-6 h-6" />
             </div>
-            <h3 className="font-extrabold text-stone-900 text-base">Log Out of Zikishop?</h3>
+            <h3 className="font-extrabold text-stone-900 text-base">Log Out of TENGA?</h3>
             <p className="text-stone-500">
               You can log back in anytime as <strong>Tendai Moyo</strong>.
             </p>

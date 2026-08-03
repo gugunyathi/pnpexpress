@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShoppingCart, Users, ChevronDown } from 'lucide-react';
 import { Currency, Member, CartItem } from '../types';
-import { ZikiLogo } from './ZikiLogo';
+import { TengaLogo } from './TengaLogo';
 import { ALL_CURRENCIES, CURRENCY_MAP } from '../utils/currency';
 
 interface NavbarProps {
@@ -37,15 +37,15 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-40 bg-[#1a115e] text-white shadow-md border-b border-[#2a1d82]">
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2">
-        {/* Zikishop Brand with Logo (No ASAP badge) */}
+        {/* TENGA Brand with Logo */}
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <div className="bg-white p-1.5 rounded-xl shadow-md flex items-center justify-center border border-stone-100">
-            <ZikiLogo size={28} />
+            <TengaLogo size={28} />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <h1 className="font-black text-xl sm:text-2xl tracking-tight text-white font-sans">
-                Ziki<span className="text-[#ff4f38]">shop</span>
+                TENGA
               </h1>
             </div>
             <p className="text-[10px] text-blue-200/90 hidden sm:block font-medium">

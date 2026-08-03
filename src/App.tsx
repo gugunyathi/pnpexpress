@@ -64,7 +64,7 @@ export default function App() {
 
   // Real-Time Notification Toast
   const [toastMessage, setToastMessage] = useState<string | null>(
-    '🟢 Connected live to Zikishop Socket.io & WhatsApp Engine'
+    '🟢 Connected live to TENGA Socket.io & WhatsApp Engine'
   );
 
   useEffect(() => {
@@ -78,11 +78,13 @@ export default function App() {
     const fetchInitialData = async () => {
       try {
         const res = await fetch('/api/cart');
+        if (!res.ok) throw new Error(`API unavailable (${res.status})`);
         const data = await res.json();
         if (data.cart) setCart(data.cart);
         if (data.members) setMembers(data.members);
       } catch (err) {
-        console.warn('Initial REST cart fetch fallback:', err);
+        console.warn('Backend unavailable — using local placeholder data:', err);
+        // Keep SAMPLE_PRODUCTS and INITIAL_MEMBERS already set as default state
       }
     };
     fetchInitialData();
@@ -124,9 +126,11 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 4500);
   };
 
-  // Cart operations
+  // Cart operations — with local fallback when backend is unavailable
   const handleAddToCart = async (productId: string, memberId: string, note?: string) => {
     const member = members.find((m) => m.id === memberId) || members[0];
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
 
     try {
       const res = await fetch('/api/cart/add', {
@@ -142,14 +146,43 @@ export default function App() {
           note
         })
       });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
       if (data.cart) {
         setCart(data.cart);
-        triggerToast(`Added item for ${member.name}`);
+        triggerToast(`Added ${product.name} for ${member.name}`);
+        return;
       }
     } catch (err) {
-      console.error('Add to cart error:', err);
+      console.warn('Add to cart — backend unavailable, using local state:', err);
     }
+    // Local fallback: add directly to in-memory cart
+    setCart((prev) => {
+      const existing = prev.find(
+        (i) => i.productId === productId && i.addedByMemberId === member.id
+      );
+      if (existing) {
+        return prev.map((i) =>
+          i.id === existing.id ? { ...i, quantity: i.quantity + 1 } : i
+        );
+      }
+      return [
+        {
+          id: `cart-local-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          productId: product.id,
+          product,
+          quantity: 1,
+          addedByMemberId: member.id,
+          addedByMemberName: member.name,
+          addedByLocation: member.location,
+          channel: member.channel || 'web',
+          addedAt: new Date().toISOString(),
+          note,
+        },
+        ...prev,
+      ];
+    });
+    triggerToast(`Added ${product.name} for ${member.name}`);
   };
 
   const handleUpdateQuantity = async (itemId: string, quantity: number) => {
@@ -159,22 +192,32 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, quantity })
       });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
-      if (data.cart) setCart(data.cart);
+      if (data.cart) { setCart(data.cart); return; }
     } catch (err) {
-      console.error('Update quantity error:', err);
+      console.warn('Update quantity — backend unavailable, using local state:', err);
     }
+    // Local fallback
+    setCart((prev) =>
+      quantity <= 0
+        ? prev.filter((i) => i.id !== itemId)
+        : prev.map((i) => (i.id === itemId ? { ...i, quantity } : i))
+    );
   };
 
   const handleClearCart = async () => {
     try {
       const res = await fetch('/api/cart/clear', { method: 'POST' });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
-      if (data.cart) setCart(data.cart);
-      triggerToast('Cart cleared');
+      if (data.cart !== undefined) { setCart(data.cart); triggerToast('Cart cleared'); return; }
     } catch (err) {
-      console.error('Clear cart error:', err);
+      console.warn('Clear cart — backend unavailable, using local state:', err);
     }
+    // Local fallback
+    setCart([]);
+    triggerToast('Cart cleared');
   };
 
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -386,7 +429,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
           <div className="space-y-1">
             <div className="flex items-center justify-center md:justify-start gap-2 text-white font-black text-sm">
-              <span>Zikishop</span>
+              <span>TENGA</span>
               <span className="bg-[#ff4f38] text-white text-[9px] font-black px-1.5 py-0.2 rounded uppercase">asap!</span>
               <span className="text-[#ffb81c] font-sans text-xs">• MERN Workspaces</span>
             </div>

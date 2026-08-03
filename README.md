@@ -1,6 +1,6 @@
-# 🛒 Zikishop — Cross-Border Collaborative Grocery Engine
+# 🛒 TENGA — Cross-Border Collaborative Grocery Engine
 
-**Zikishop** is a full-stack, real-time collaborative grocery shopping application designed for cross-border families between **South Africa (SA)** and **Zimbabwe (ZIM)**. It enables diaspora family members (e.g. in Johannesburg or London) to shop together in real time with relatives back home (e.g. in Harare or Bulawayo) via live video call, shared synchronized cart, multi-currency split payment calculations, and Gemini AI-powered voice & basket recommendations.
+**TENGA** is a full-stack, real-time collaborative grocery shopping application designed for cross-border families between **South Africa (SA)** and **Zimbabwe (ZIM)**. It enables diaspora family members (e.g. in Johannesburg or London) to shop together in real time with relatives back home (e.g. in Harare or Bulawayo) via live video call, shared synchronized cart, multi-currency split payment calculations, and Gemini AI-powered voice & basket recommendations.
 
 ---
 
@@ -16,7 +16,7 @@
   - **Voice AI Assistant**: Interactive voice/text modal for hands-free shopping additions and voice command navigation.
   - **Smart Basket AI**: Generates personalized, budget-conscious family grocery bundles using structured JSON generation (`responseSchema`).
   - **Recipe AI Engine**: Translates traditional meals (e.g., *Sadza ne Beef Stew*) into exact store catalog ingredient picks.
-  - **Ziki AI Assistant**: Loyalty, smart replenishment tips, and automated meal planning recommendations.
+  - **Tenga AI Assistant**: Loyalty, smart replenishment tips, and automated meal planning recommendations.
 
 - **⚡ Real-Time WebSockets (Socket.io)**:
   - Instant cross-border cart updates across connected family members.
@@ -111,7 +111,7 @@ npm start
 │   │   ├── SmartBasketModal.tsx # AI Smart Basket generator modal
 │   │   ├── VoiceAIAssistant.tsx # Voice Assistant modal using Gemini
 │   │   ├── WhatsAppSimulator.tsx# Low-data WhatsApp channel simulator
-│   │   ├── ProfileView.tsx      # User profile, wallet, and Ziki loyalty points
+│   │   ├── ProfileView.tsx      # User profile, wallet, and Tenga loyalty points
 │   │   └── ...
 │   ├── data/
 │   │   └── products.ts          # Catalog products database

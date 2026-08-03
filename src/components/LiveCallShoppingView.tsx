@@ -391,7 +391,7 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-nowrap overflow-hidden">
               <h1 className="font-black text-xs sm:text-base text-white tracking-wide whitespace-nowrap truncate max-w-[150px] xs:max-w-[200px] sm:max-w-none">
-                Zikishop Live Shopping Call
+                TENGA Live Shopping Call
               </h1>
               <span className="bg-emerald-500/20 text-emerald-300 text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2.5 py-0.5 rounded-full border border-emerald-400/40 uppercase tracking-wider flex items-center gap-1 shrink-0 whitespace-nowrap">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

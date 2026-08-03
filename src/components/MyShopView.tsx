@@ -213,7 +213,7 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
   }, [previouslyBoughtProducts, searchQuery]);
 
   const copyInviteLink = () => {
-    navigator.clipboard?.writeText('https://zikishop.app/join/moyo-family-group');
+    navigator.clipboard?.writeText('https://tengei.vercel.app/join/moyo-family-group');
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };

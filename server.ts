@@ -689,7 +689,7 @@ Return a JSON object with:
       const { paymentMethod = 'EcoCash', payerMemberId = 'mem-1', deliveryAddress } = req.body;
       const totalUSD = currentCart.reduce((sum, item) => sum + item.product.priceUSD * item.quantity, 0);
 
-      const orderId = `ZIKI-${Math.floor(100000 + Math.random() * 900000)}`;
+      const orderId = `TENGA-${Math.floor(100000 + Math.random() * 900000)}`;
       const voucherCode = `VOUCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
       const orderReceipt = {
