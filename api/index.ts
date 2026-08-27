@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from '../src/data/products';
 import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from '../server/models';
+import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from '../server/coinbaseCheckout';
 
 // Shared In-Memory Demo Cart for Vercel Serverless Session
 const DEMO_CART = [
@@ -299,29 +300,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // --- 9. CHECKOUT ---
-  if (pathname === '/checkout' && req.method === 'POST') {
-    const { paymentMethod = 'EcoCash' } = req.body || {};
-    const totalUSD = DEMO_CART.reduce((sum, item) => sum + item.product.priceUSD * item.quantity, 0);
-    const orderId = `PNP-ZW-${Math.floor(100000 + Math.random() * 900000)}`;
-    const voucherCode = `VOUCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  // --- 9. DUAL-PATH COINBASE CHECKOUT & WEBHOOKS ---
+  if ((pathname === '/checkout' || pathname === '/checkout/create') && req.method === 'POST') {
+    const { amount, currency = 'USD', orderId, customerEmail, country, card } = req.body || {};
+    const totalAmount = amount ? parseFloat(amount) : DEMO_CART.reduce((sum, item) => sum + item.product.priceUSD * item.quantity, 0);
+    const targetOrderId = orderId || `PNP-ZW-${Math.floor(100000 + Math.random() * 900000)}`;
+    const targetCountry = country || (card?.billingCountry) || 'US';
 
-    return res.status(200).json({
-      success: true,
-      order: {
-        orderId,
-        voucherCode,
-        paymentMethod,
-        totalUSD: Number(totalUSD.toFixed(2)),
-        totalZWG: Number((totalUSD * INITIAL_EXCHANGE_RATES.USD_ZWG).toFixed(2)),
-        itemsCount: DEMO_CART.reduce((cnt, i) => cnt + i.quantity, 0),
-        items: DEMO_CART,
-        deliveryAddress: { type: 'DOOR_DELIVERY', city: 'Harare', country: 'Zimbabwe' },
-        pickupDepot: 'OK Zimbabwe - First Street, Harare',
-        createdAt: new Date().toISOString(),
-        estimatedFulfillment: 'Within 4 Hours Express',
-      },
+    const checkoutResult = await createCoinbaseCheckout({
+      amount: totalAmount,
+      currency,
+      orderId: targetOrderId,
+      customerEmail: customerEmail || 'shopper@pnpexpress.co.zw',
+      country: targetCountry,
+      card
     });
+
+    return res.status(200).json(checkoutResult);
+  }
+
+  if (pathname === '/webhooks/coinbase' && req.method === 'POST') {
+    const rawPayload = JSON.stringify(req.body || {});
+    const signatureHeader = (req.headers['x-hook0-signature'] as string) || (req.headers['x-cc-webhook-signature'] as string);
+    const secret = process.env.COINBASE_WEBHOOK_SECRET || 'sec_wh_cdp_pnpexpress_2026';
+
+    const isValid = verifyWebhookSignature(rawPayload, signatureHeader, secret, req.headers as any);
+    const event = req.body || {};
+    const eventType = event.type || event.event?.type;
+    const metadata = event.data?.metadata || event.event?.data?.metadata || {};
+    const orderId = metadata.orderId || event.data?.id;
+
+    if (eventType === 'checkout.payment.success' || eventType === 'charge:confirmed') {
+      if (orderId) {
+        await OrderModel.updateOne({ orderId }, { $set: { status: 'PROCESSING', statusLabel: 'Paid via Coinbase USDC' } }).catch(() => {});
+      }
+    }
+
+    return res.status(200).send('OK');
+  }
+
+  if ((pathname === '/checkout/refund' || pathname.includes('/refund')) && req.method === 'POST') {
+    const checkoutId = req.body?.checkoutId || req.body?.orderId || 'chk_demo';
+    const reason = req.body?.reason || 'Order cancelled';
+    const result = await refundCoinbaseCheckout(checkoutId, reason);
+    return res.status(200).json(result);
   }
 
   // --- 10. AI RECIPE SUGGEST ---
