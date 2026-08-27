@@ -60,6 +60,8 @@ export async function createCoinbaseCheckout(payload: CheckoutRequestPayload) {
   const isUS = normalizedCountry === 'US' || normalizedCountry === 'USA' || normalizedCountry === 'UNITED STATES';
   const isWithinHeadlessLimit = amount <= 2500;
 
+  const merchantWalletAddress = process.env.MERCHANT_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18';
+
   // Path A: Headless Onramp for U.S. users (Native embedded Web2 Card UI, $2.5K limit)
   if (isUS && isWithinHeadlessLimit) {
     const checkoutId = `chk_head_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -71,7 +73,9 @@ export async function createCoinbaseCheckout(payload: CheckoutRequestPayload) {
       amount: amount.toFixed(2),
       currency,
       country: 'US',
-      message: 'US Native Headless Card Onramp cleared gaslessly into USDC merchant treasury',
+      merchantWalletAddress,
+      network: 'Base Sepolia Testnet (Layer 2 Gasless)',
+      message: `US Native Headless Card Onramp cleared gaslessly into merchant wallet (${merchantWalletAddress})`,
       url: `https://pnpexpress.vercel.app/order/${orderId}/success`
     };
   }
@@ -92,7 +96,7 @@ export async function createCoinbaseCheckout(payload: CheckoutRequestPayload) {
         description: `PNP Express Order #${orderId}`,
         successRedirectUrl: `https://pnpexpress.vercel.app/order/${orderId}/success`,
         failRedirectUrl: `https://pnpexpress.vercel.app/order/${orderId}/failed`,
-        metadata: { orderId, customerEmail, country: normalizedCountry }
+        metadata: { orderId, customerEmail, country: normalizedCountry, merchantWalletAddress }
       })
     });
 
@@ -103,7 +107,9 @@ export async function createCoinbaseCheckout(payload: CheckoutRequestPayload) {
         mode: 'HOSTED_REDIRECT',
         url: checkout.url || `https://checkout.coinbase.com/pay/${checkout.id}`,
         checkoutId: checkout.id,
-        orderId
+        orderId,
+        merchantWalletAddress,
+        network: 'Base Sepolia Testnet'
       };
     }
   } catch (err) {
@@ -117,7 +123,9 @@ export async function createCoinbaseCheckout(payload: CheckoutRequestPayload) {
     mode: 'HOSTED_REDIRECT',
     url: `https://checkout.coinbase.com/pay/${fallbackCheckoutId}`,
     checkoutId: fallbackCheckoutId,
-    orderId
+    orderId,
+    merchantWalletAddress,
+    network: 'Base Sepolia Testnet'
   };
 }
 
