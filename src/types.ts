@@ -135,3 +135,58 @@ export interface ExchangeRates {
   USD_ZWG: number;
   lastUpdated: string;
 }
+
+export type PaymentRail = 'CONTIPAY' | 'PESAPAL' | 'COINBASE_USDC';
+
+export interface CardDetails {
+  cardholderName: string;
+  cardNumber: string;
+  expiryMonth: string;
+  expiryYear: string;
+  cvv: string;
+  billingCountry: string;
+  postalCode?: string;
+}
+
+export interface OrchestrationAttempt {
+  rail: PaymentRail;
+  latencyMs: number;
+  error?: string;
+  status: 'SUCCESS' | 'FAILED' | 'SKIPPED';
+}
+
+export interface OrchestrationResponse {
+  success: boolean;
+  orderId: string;
+  voucherCode: string;
+  finalRail?: PaymentRail;
+  transactionReference?: string;
+  settlementAccount?: string;
+  forexReportingCode?: string;
+  totalLatencyMs: number;
+  attempts: OrchestrationAttempt[];
+  userMessage: string;
+  itemsCount: number;
+  totalUSD: number;
+  deliverySummary?: {
+    memberName: string;
+    destination: string;
+    type: DeliveryType;
+  }[];
+  timestamp: string;
+}
+
+export interface PaymentOrchestratorLog {
+  id: string;
+  timestamp: string;
+  orderId: string;
+  amountUSD: number;
+  billingCountry: string;
+  cardLast4: string;
+  status: 'SETTLED' | 'FAILED';
+  finalRail?: PaymentRail;
+  attempts: OrchestrationAttempt[];
+  nostroAccount?: string;
+  forexCode?: string;
+  totalLatencyMs: number;
+}

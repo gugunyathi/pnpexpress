@@ -40,10 +40,13 @@ import {
   HelpCircle,
   X,
   Upload,
-  Camera
+  Camera,
+  Receipt,
+  ShoppingBag
 } from 'lucide-react';
 import { Currency } from '../types';
 import { ALL_CURRENCIES, formatPrice } from '../utils/currency';
+import { OrdersAndInvoicesView } from './OrdersAndInvoicesView';
 
 interface ProfileViewProps {
   currency: Currency;
@@ -54,11 +57,13 @@ interface ProfileViewProps {
 
 type SubViewType = 
   | null
+  | 'orders'
+  | 'invoices'
   | 'edit-details'
   | 'saved-addresses'
   | 'comm-prefs'
   | 'delete-account'
-  | 'Tenga'
+  | 'pnp'
   | 'bank-cards'
   | 'wallet'
   | 'credits-returns'
@@ -87,7 +92,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     primaryLocation: 'Sandton, Johannesburg, SA',
     recipientCity: 'Harare, Zimbabwe',
     language: 'Shona',
-    memberId: 'TENGA-SA-88421',
+    memberId: 'PNP-SA-88421',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
   });
 
@@ -171,13 +176,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [autoReload, setAutoReload] = useState(true);
   const [walletLogs, setWalletLogs] = useState([
     { id: 'log-1', type: 'Top-Up', date: '28 Jul 2026', amount: '+ $100.00', method: 'FNB Card', status: 'Completed' },
-    { id: 'log-2', type: 'Grocery Order #ZKS-8921', date: '24 Jul 2026', amount: '- $48.50', method: 'OK Harare Depot', status: 'Completed' },
+    { id: 'log-2', type: 'Grocery Order #PNP-8921', date: '24 Jul 2026', amount: '- $48.50', method: 'PnP Harare Depot', status: 'Completed' },
     { id: 'log-3', type: 'Store Refund Credit', date: '20 Jul 2026', amount: '+ $15.00', method: 'Damaged Item Refund', status: 'Completed' },
-    { id: 'log-4', type: 'Grocery Order #ZKS-7740', date: '10 Jul 2026', amount: '- $62.10', method: 'Pick n Pay Bulawayo', status: 'Completed' },
+    { id: 'log-4', type: 'Grocery Order #PNP-7740', date: '10 Jul 2026', amount: '- $62.10', method: 'Pick n Pay Bulawayo', status: 'Completed' },
   ]);
 
-  // Tenga Points State
-  const [tengaPoints, settengaPoints] = useState(4850);
+  // PnP Smart Points State
+  const [pnpPoints, setPnpPoints] = useState(4850);
 
   // Credits & Returns State
   const [creditsBalanceUSD] = useState(15.00);
@@ -187,7 +192,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   ]);
   const [showFileReturnModal, setShowFileReturnModal] = useState(false);
   const [returnForm, setReturnForm] = useState({
-    orderId: 'ZKS-8921',
+    orderId: 'PNP-8921',
     item: 'Tastic Parboiled Rice (10kg)',
     reason: 'Packaging damaged',
     comments: ''
@@ -221,17 +226,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       },
       ...prev
     ]);
-    showToast(`Successfully added $${amt.toFixed(2)} to TENGA Wallet! 💵`);
+    showToast(`Successfully added ${amt.toFixed(2)} to PnP Wallet! 💵`);
   };
 
   const handleRedeemVoucher = (pts: number, valUSD: number) => {
-    if (tengaPoints < pts) {
-      showToast('Insufficient Tenga Points to redeem this voucher');
+    if (pnpPoints < pts) {
+      showToast('Insufficient PnP Points to redeem this voucher');
       return;
     }
-    settengaPoints((prev) => prev - pts);
+    setPnpPoints((prev) => prev - pts);
     setWalletBalanceUSD((prev) => prev + valUSD);
-    showToast(`Redeemed ${pts} Tenga Points for $${valUSD} Grocery Voucher! 🎉`);
+    showToast(`Redeemed ${pts} PnP Points for ${valUSD} Grocery Voucher! 🎉`);
   };
 
   const handleAddAddress = () => {
@@ -296,7 +301,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   if (isLoggedOut) {
     return (
       <div className="bg-[#f1f3f7] min-h-[70vh] p-4 sm:p-6 rounded-3xl flex flex-col items-center justify-center text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-[#1a115e]/10 text-[#1a115e] flex items-center justify-center">
+        <div className="w-16 h-16 rounded-full bg-[#002D62]/10 text-[#002D62] flex items-center justify-center">
           <User className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-black text-stone-900">You are logged out</h2>
@@ -308,7 +313,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             setIsLoggedOut(false);
             showToast('Welcome back, Tendai! 🇿🇼');
           }}
-          className="bg-[#1a115e] hover:bg-[#241a7d] text-white font-extrabold text-xs px-6 py-3 rounded-2xl shadow-md transition-all cursor-pointer"
+          className="bg-[#002D62] hover:bg-[#001D42] text-white font-extrabold text-xs px-6 py-3 rounded-2xl shadow-md transition-all cursor-pointer"
         >
           Log Back In as Tendai Moyo
         </button>
@@ -320,8 +325,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     <div className="bg-[#f1f3f7] min-h-[85vh] p-3 sm:p-6 rounded-3xl space-y-5 text-stone-900 relative pb-24">
       {/* Toast Notification Banner */}
       {toastMsg && (
-        <div className="fixed bottom-20 sm:bottom-6 right-4 z-50 bg-[#1a115e] text-[#ffb81c] px-4 py-3 rounded-2xl shadow-2xl border border-[#298bf5]/40 flex items-center gap-3 animate-fade-in max-w-sm text-xs font-bold">
-          <Sparkles className="w-4 h-4 text-[#ff4f38] flex-shrink-0 animate-bounce" />
+        <div className="fixed bottom-20 sm:bottom-6 right-4 z-50 bg-[#002D62] text-[#FFB81C] px-4 py-3 rounded-2xl shadow-2xl border border-[#004A99]/40 flex items-center gap-3 animate-fade-in max-w-sm text-xs font-bold">
+          <Sparkles className="w-4 h-4 text-[#D0021B] flex-shrink-0 animate-bounce" />
           <span>{toastMsg}</span>
         </div>
       )}
@@ -334,22 +339,31 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveSubView(null)}
-              className="flex items-center gap-2 text-stone-700 hover:text-[#1a115e] font-extrabold text-xs bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+              className="flex items-center gap-2 text-stone-700 hover:text-[#002D62] font-extrabold text-xs bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4 text-[#1a115e]" />
+              <ArrowLeft className="w-4 h-4 text-[#002D62]" />
               <span>Back to My Account</span>
             </button>
 
-            <span className="text-xs font-black text-[#1a115e] uppercase tracking-wider hidden sm:inline">
-              TENGA Account Services
+            <span className="text-xs font-black text-[#002D62] uppercase tracking-wider hidden sm:inline">
+              PnP Account Services
             </span>
           </div>
+
+          {/* 0. PAST ORDERS & INVOICES VIEW */}
+          {(activeSubView === 'orders' || activeSubView === 'invoices') && (
+            <OrdersAndInvoicesView
+              currency={currency}
+              onCurrencyChange={onCurrencyChange}
+              onShowToast={showToast}
+            />
+          )}
 
           {/* 1. EDIT MY DETAILS VIEW */}
           {activeSubView === 'edit-details' && (
             <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/80 shadow-xs space-y-5">
               <div className="flex items-center gap-3 border-b border-stone-100 pb-4">
-                <div className="p-3 bg-[#1a115e]/10 text-[#1a115e] rounded-2xl">
+                <div className="p-3 bg-[#002D62]/10 text-[#002D62] rounded-2xl">
                   <User className="w-6 h-6" />
                 </div>
                 <div>
@@ -364,12 +378,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <img
                     src={userDetails.avatar}
                     alt={userDetails.name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-[#1a115e]"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-[#002D62]"
                   />
                   <button
                     type="button"
                     onClick={() => showToast('Avatar upload simulated')}
-                    className="absolute bottom-0 right-0 p-1 bg-[#1a115e] text-white rounded-full shadow cursor-pointer"
+                    className="absolute bottom-0 right-0 p-1 bg-[#002D62] text-white rounded-full shadow cursor-pointer"
                     title="Change Photo"
                   >
                     <Camera className="w-3.5 h-3.5" />
@@ -604,7 +618,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-stone-900 text-lg">Request Account Deletion</h3>
-                  <p className="text-xs text-stone-500">Permanently close your TENGA account and unlink family members</p>
+                  <p className="text-xs text-stone-500">Permanently close your PnP account and unlink family members</p>
                 </div>
               </div>
 
@@ -614,7 +628,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   Warning: Irreversible Action
                 </span>
                 <p>
-                  Deleting your account will forfeit your <strong>4,850 Tenga Loyalty Points ($48.50 value)</strong>, unlink your Moyo Family Shared Cart, and clear saved address presets.
+                  Deleting your account will forfeit your <strong>4,850 PnP Loyalty Points ($48.50 value)</strong>, unlink your Moyo Family Shared Cart, and clear saved address presets.
                 </p>
               </div>
 
@@ -663,7 +677,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 type="button"
                 disabled={!deleteConfirmed}
                 onClick={() => {
-                  showToast('Account deletion request submitted to TENGA Compliance.');
+                  showToast('Account deletion request submitted to PnP Compliance.');
                   setActiveSubView(null);
                 }}
                 className={`w-full py-3 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-2 ${
@@ -678,18 +692,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           )}
 
-          {/* 5. Tenga VIEW */}
-          {activeSubView === 'Tenga' && (
+          {/* 5. PNP VIEW */}
+          {activeSubView === 'pnp' && (
             <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/80 shadow-xs space-y-5">
-              <div className="bg-gradient-to-r from-[#1a115e] to-[#2e1d9e] text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-[#3b2aae]">
+              <div className="bg-gradient-to-r from-[#002D62] to-[#003B80] text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-[#004A99]">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300 flex-shrink-0">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FFB81C]/20 border border-[#FFB81C]/40 flex items-center justify-center text-[#FFB81C] flex-shrink-0">
                     <Sparkles className="w-6 h-6 animate-pulse" />
                   </div>
                   <div>
                     <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
-                      <span>Tenga AI Shopping Assistant</span>
-                      <span className="bg-[#ff4f38] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                      <span>PnP Smart Shopping Assistant</span>
+                      <span className="bg-[#D0021B] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
                         Gold Sponsor Tier
                       </span>
                     </h3>
@@ -698,17 +712,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-center self-end sm:self-auto">
-                  <span className="text-[10px] text-amber-300 font-bold block uppercase">Points Balance</span>
-                  <span className="font-black text-amber-300 text-xl">{tengaPoints.toLocaleString()} pts</span>
-                  <span className="text-[10px] text-blue-200 block font-semibold">(${(tengaPoints / 100).toFixed(2)} USD Value)</span>
+                  <span className="text-[10px] text-[#FFB81C] font-bold block uppercase">Points Balance</span>
+                  <span className="font-black text-[#FFB81C] text-xl">{pnpPoints.toLocaleString()} pts</span>
+                  <span className="text-[10px] text-blue-200 block font-semibold">(${(pnpPoints / 100).toFixed(2)} USD Value)</span>
                 </div>
               </div>
 
               {/* Redeem Vouchers Section */}
               <div className="space-y-3">
                 <h4 className="font-extrabold text-stone-900 text-sm flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-amber-600" />
-                  <span>Redeem Tenga Points for Grocery Vouchers</span>
+                  <Gift className="w-4 h-4 text-[#FFB81C]" />
+                  <span>Redeem PnP Points for Grocery Vouchers</span>
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -719,13 +733,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   ].map((v) => (
                     <div key={v.pts} className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2 flex flex-col justify-between">
                       <div>
-                        <span className="font-extrabold text-[#1a115e] text-sm block">{v.title}</span>
-                        <span className="text-xs text-amber-700 font-bold block mt-1">{v.pts} Tenga Points</span>
+                        <span className="font-extrabold text-[#002D62] text-sm block">{v.title}</span>
+                        <span className="text-xs text-amber-700 font-bold block mt-1">{v.pts} PnP Points</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleRedeemVoucher(v.pts, v.usd)}
-                        className="w-full bg-[#1a115e] hover:bg-[#241a7d] text-white font-extrabold text-xs py-2 rounded-xl transition-all cursor-pointer"
+                        className="w-full bg-[#002D62] hover:bg-[#001D42] text-white font-extrabold text-xs py-2 rounded-xl transition-all cursor-pointer"
                       >
                         Redeem ${v.usd}
                       </button>
@@ -738,14 +752,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-2">
                 <span className="font-extrabold text-amber-900 text-xs flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-amber-600" />
-                  Tenga Smart Replenishment Tip
+                  PnP Smart Replenishment Tip
                 </span>
                 <p className="text-xs text-amber-900 leading-snug">
-                  Based on past order cycles, Gogo Moyo in Harare will need <strong>Tastic Rice 10kg</strong> in 3 days. Would you like Tenga to auto-add it to your cart with a 5% Tenga discount?
+                  Based on past order cycles, Gogo Moyo in Harare will need <strong>Tastic Rice 10kg</strong> in 3 days. Would you like PnP to auto-add it to your cart with a 5% PnP discount?
                 </p>
                 <button
                   type="button"
-                  onClick={() => showToast('Added Tastic Rice 10kg with 5% Tenga Discount!')}
+                  onClick={() => showToast('Added Tastic Rice 10kg with 5% PnP Discount!')}
                   className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer inline-block"
                 >
                   Auto-Add Tastic Rice
@@ -969,7 +983,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <p className="text-xs text-emerald-800">Instant chat with our diaspora team in Johannesburg & Harare</p>
                   <button
                     type="button"
-                    onClick={() => showToast('Opening TENGA WhatsApp Support Chat...')}
+                    onClick={() => showToast('Opening PnP WhatsApp Support Chat...')}
                     className="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl cursor-pointer"
                   >
                     Open WhatsApp
@@ -993,14 +1007,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
                 <div className="bg-stone-50 border border-stone-200 p-4 rounded-2xl text-stone-900 space-y-2">
                   <span className="font-extrabold text-sm block flex items-center gap-1.5">
-                    <Mail className="w-4 h-4 text-[#1a115e]" />
+                    <Mail className="w-4 h-4 text-[#002D62]" />
                     Email Support
                   </span>
-                  <p className="text-xs text-stone-600">support@tenga.com (Guaranteed response in 2 hrs)</p>
+                  <p className="text-xs text-stone-600 font-medium">support@pnp.co.zw (Guaranteed response in 2 hrs)</p>
                   <button
                     type="button"
                     onClick={() => showToast('Ticket draft created!')}
-                    className="bg-[#1a115e] hover:bg-[#241a7d] text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl cursor-pointer"
+                    className="bg-[#002D62] hover:bg-[#001D42] text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl cursor-pointer"
                   >
                     Send Email
                   </button>
@@ -1034,7 +1048,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <Star className="w-6 h-6 fill-amber-500 text-amber-500" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-stone-900 text-lg">Rate Your TENGA Experience</h3>
+                  <h3 className="font-extrabold text-stone-900 text-lg">Rate Your PnP Experience</h3>
                   <p className="text-xs text-stone-500">Your feedback helps us improve SA-to-ZIM cross-border grocery delivery</p>
                 </div>
               </div>
@@ -1046,7 +1060,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </div>
                   <h4 className="font-black text-emerald-900 text-base">Tatenda! Thank you for rating us!</h4>
                   <p className="text-xs text-emerald-800 max-w-sm mx-auto">
-                    We’ve credited <strong>+100 Bonus Tenga Points</strong> to your account for leaving a review.
+                    We’ve credited <strong>+100 Bonus PnP Points</strong> to your account for leaving a review.
                   </p>
                 </div>
               ) : (
@@ -1111,10 +1125,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     type="button"
                     onClick={() => {
                       setRatingSubmitted(true);
-                      settengaPoints((p) => p + 100);
-                      showToast('Submitted review! +100 Tenga Points added!');
+                      setPnpPoints((p) => p + 100);
+                      showToast('Submitted review! +100 PnP Points added!');
                     }}
-                    className="w-full bg-[#ff4f38] hover:bg-[#e03e28] text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow cursor-pointer"
+                    className="w-full bg-[#D0021B] hover:bg-[#b00217] text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow cursor-pointer"
                   >
                     Submit 5-Star Review
                   </button>
@@ -1132,13 +1146,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-stone-900 text-lg">Terms & Conditions</h3>
-                  <p className="text-xs text-stone-500">Last updated: July 2026 • TENGA Cross-Border Technologies</p>
+                  <p className="text-xs text-stone-500">Last updated: July 2026 • TM Pick n Pay Cross-Border Technologies</p>
                 </div>
               </div>
 
               <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                 <h4 className="font-extrabold text-stone-900 text-sm">1. Service Overview</h4>
-                <p>TENGA facilitates cross-border grocery ordering and store depot pick-up between South Africa, the United Kingdom, and Zimbabwe. All grocery fulfillment is guaranteed through authorized supermarket partners in Zimbabwe (OK Zimbabwe, Pick n Pay, SPAR).</p>
+                <p>TM Pick n Pay facilitates cross-border grocery ordering and store depot pick-up between South Africa, the United Kingdom, and Zimbabwe. All grocery fulfillment is guaranteed through authorized supermarket partners in Zimbabwe (TM Pick n Pay, OK Zimbabwe, SPAR).</p>
 
                 <h4 className="font-extrabold text-stone-900 text-sm">2. Payments & Currency Rates</h4>
                 <p>Payments made via EcoCash, Mukuru, FNB, or Nedbank cards are processed in real-time according to official bank exchange rates. All wallet top-ups are non-expiring and redeemable for goods across all partner depots.</p>
@@ -1176,15 +1190,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         /* --- MAIN "MY ACCOUNT" MENU HUB (Matches User Screenshots) --- */
         <div className="space-y-6">
           {/* Header User Card */}
-          <div className="bg-gradient-to-r from-[#1a115e] via-[#241a7d] to-[#100a3d] text-white rounded-3xl p-5 sm:p-6 shadow-md border border-[#2a1d82] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="bg-gradient-to-r from-[#002D62] via-[#003B80] to-[#001D42] text-white rounded-3xl p-5 sm:p-6 shadow-md border border-[#004A99] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <img
                   src={userDetails.avatar}
                   alt={userDetails.name}
-                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-3 border-[#ffb81c] shadow-md"
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-3 border-[#FFB81C] shadow-md"
                 />
-                <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#1a115e]" />
+                <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#002D62]" />
               </div>
 
               <div>
@@ -1192,12 +1206,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <h2 className="text-xl sm:text-2xl font-black text-white font-sans">
                     {userDetails.name}
                   </h2>
-                  <span className="bg-[#ff4f38] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                  <span className="bg-[#D0021B] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                     Diaspora Sponsor
                   </span>
                 </div>
                 <p className="text-xs text-blue-200 mt-0.5 flex items-center gap-1">
-                  <Globe className="w-3.5 h-3.5 text-[#ffb81c]" />
+                  <Globe className="w-3.5 h-3.5 text-[#FFB81C]" />
                   {userDetails.primaryLocation} ➔ {userDetails.recipientCity}
                 </p>
                 <span className="text-[11px] text-stone-300 font-mono mt-1 block">
@@ -1206,7 +1220,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             </div>
 
-            {/* Wallet & Tenga Quick Pill */}
+            {/* Wallet & PnP Quick Pill */}
             <div className="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/15 flex items-center gap-4 text-xs font-bold self-end sm:self-auto">
               <div>
                 <span className="text-[10px] text-blue-200 block uppercase font-semibold">Wallet</span>
@@ -1214,17 +1228,61 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
               <div className="h-6 w-[1px] bg-white/20" />
               <div>
-                <span className="text-[10px] text-amber-300 block uppercase font-semibold">Tenga Points</span>
-                <span className="font-black text-amber-300 text-sm">{tengaPoints.toLocaleString()}</span>
+                <span className="text-[10px] text-[#FFB81C] block uppercase font-semibold">PnP Points</span>
+                <span className="font-black text-[#FFB81C] text-sm">{pnpPoints.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
-          {/* SECTION 1: MY ACCOUNT (From Screenshot 1) */}
+          {/* Quick Primary Tab Switcher */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-white p-2 rounded-2xl border border-stone-200/90 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setActiveSubView(null)}
+              className="flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-black text-xs transition-all bg-[#002D62] text-white shadow-xs cursor-pointer"
+            >
+              <User className="w-4 h-4 text-[#FFB81C]" />
+              <span>Account Hub</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSubView('orders')}
+              className="flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-black text-xs transition-all bg-stone-100 hover:bg-[#002D62]/10 text-stone-800 hover:text-[#002D62] cursor-pointer"
+            >
+              <Package className="w-4 h-4 text-[#D0021B]" />
+              <span>Past Orders & Invoices (3)</span>
+            </button>
+          </div>
+
+          {/* SECTION 1: MY ACCOUNT */}
           <div className="space-y-3">
             <h3 className="font-black text-stone-900 text-base sm:text-lg px-1">My Account</h3>
 
             <div className="space-y-2.5">
+              {/* 0. Past Orders & Invoices (Top Shortcut) */}
+              <button
+                type="button"
+                onClick={() => setActiveSubView('orders')}
+                className="w-full bg-gradient-to-r from-blue-50 via-white to-amber-50 hover:from-blue-100 hover:to-amber-100 text-left p-4 rounded-3xl border border-blue-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-2xl bg-[#002D62] text-[#FFB81C] flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <Package className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-black text-stone-900 text-sm sm:text-base block">Past Orders & Invoices</span>
+                    <span className="text-[11px] text-[#002D62] font-bold block">3 Completed Orders • Official VAT Tax Receipts</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-[#D0021B] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase hidden sm:inline">
+                    Live Dispatch
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
+                </div>
+              </button>
+
               {/* 1. Edit My Details */}
               <button
                 type="button"
@@ -1232,12 +1290,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#1a115e]/10 text-stone-800 group-hover:text-[#1a115e] flex items-center justify-center transition-colors">
+                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#002D62]/10 text-stone-800 group-hover:text-[#002D62] flex items-center justify-center transition-colors">
                     <User className="w-5 h-5" />
                   </div>
                   <span className="font-extrabold text-stone-900 text-sm sm:text-base">Edit My Details</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
               </button>
 
               {/* 2. Saved Addresses */}
@@ -1247,12 +1305,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#1a115e]/10 text-stone-800 group-hover:text-[#1a115e] flex items-center justify-center transition-colors">
+                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#002D62]/10 text-stone-800 group-hover:text-[#002D62] flex items-center justify-center transition-colors">
                     <Store className="w-5 h-5" />
                   </div>
                   <span className="font-extrabold text-stone-900 text-sm sm:text-base">Saved Addresses</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
               </button>
 
               {/* 3. Communication Preferences */}
@@ -1262,12 +1320,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#1a115e]/10 text-stone-800 group-hover:text-[#1a115e] flex items-center justify-center transition-colors">
+                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#002D62]/10 text-stone-800 group-hover:text-[#002D62] flex items-center justify-center transition-colors">
                     <Megaphone className="w-5 h-5" />
                   </div>
                   <span className="font-extrabold text-stone-900 text-sm sm:text-base">Communication Preferences</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
               </button>
 
               {/* 4. Request Account Deletion */}
@@ -1287,27 +1345,50 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           </div>
 
-          {/* SECTION 2: MY SHOPPING (From Screenshot 2) */}
+          {/* SECTION 2: MY SHOPPING */}
           <div className="space-y-3">
             <h3 className="font-black text-stone-900 text-base sm:text-lg px-1">My Shopping</h3>
 
             <div className="space-y-2.5">
-              {/* 1. Tenga */}
+              {/* 0. Orders & Invoices */}
               <button
                 type="button"
-                onClick={() => setActiveSubView('Tenga')}
+                onClick={() => setActiveSubView('orders')}
                 className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#002D62]/10 text-stone-800 group-hover:text-[#002D62] flex items-center justify-center transition-colors">
+                    <Receipt className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="font-extrabold text-stone-900 text-sm sm:text-base block">Tenga</span>
-                    <span className="text-[11px] text-amber-700 font-bold block">{tengaPoints.toLocaleString()} Points Available</span>
+                    <span className="font-extrabold text-stone-900 text-sm sm:text-base block">Orders & Invoices</span>
+                    <span className="text-[11px] text-stone-500 font-medium block">Track past deliveries & download tax invoices</span>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+                <div className="flex items-center gap-2">
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full">
+                    3 Completed
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
+                </div>
+              </button>
+
+              {/* 1. PnP Smart Assistant */}
+              <button
+                type="button"
+                onClick={() => setActiveSubView('pnp')}
+                className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-full bg-[#002D62]/10 text-[#002D62] flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-5 h-5 text-[#D0021B]" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-stone-900 text-sm sm:text-base block">PnP Loyalty & Smart Assistant</span>
+                    <span className="text-[11px] text-[#002D62] font-bold block">{pnpPoints.toLocaleString()} Points Available</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
               </button>
 
               {/* 2. Bank Cards */}
@@ -1317,12 +1398,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#1a115e]/10 text-stone-800 group-hover:text-[#1a115e] flex items-center justify-center transition-colors">
+                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#002D62]/10 text-stone-800 group-hover:text-[#002D62] flex items-center justify-center transition-colors">
                     <CreditCard className="w-5 h-5" />
                   </div>
                   <span className="font-extrabold text-stone-900 text-sm sm:text-base">Bank Cards</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
               </button>
 
               {/* 3. Wallet Balance */}
@@ -1341,7 +1422,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-1 rounded-full">
                     ${walletBalanceUSD.toFixed(2)} USD
                   </span>
-                  <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+                  <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
                 </div>
               </button>
 
@@ -1352,12 +1433,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#1a115e]/10 text-stone-800 group-hover:text-[#1a115e] flex items-center justify-center transition-colors">
+                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#002D62]/10 text-stone-800 group-hover:text-[#002D62] flex items-center justify-center transition-colors">
                     <Package className="w-5 h-5" />
                   </div>
                   <span className="font-extrabold text-stone-900 text-sm sm:text-base">Credits & Returns</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
               </button>
 
               {/* 5. Help Me */}
@@ -1367,17 +1448,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#1a115e]/10 text-stone-800 group-hover:text-[#1a115e] flex items-center justify-center transition-colors">
+                  <div className="w-10 h-10 rounded-2xl bg-stone-100 group-hover:bg-[#002D62]/10 text-stone-800 group-hover:text-[#002D62] flex items-center justify-center transition-colors">
                     <LifeBuoy className="w-5 h-5" />
                   </div>
                   <span className="font-extrabold text-stone-900 text-sm sm:text-base">Help Me</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
               </button>
             </div>
           </div>
 
-          {/* SECTION 3: LEGAL & RATING OPTIONS (From Screenshot 3) */}
+          {/* SECTION 3: LEGAL & RATING OPTIONS */}
           <div className="space-y-2.5 pt-2">
             {/* Rate Us */}
             <button
@@ -1386,7 +1467,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
             >
               <span className="font-extrabold text-stone-900 text-sm sm:text-base pl-1">Rate Us</span>
-              <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+              <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
             </button>
 
             {/* Terms & Conditions */}
@@ -1396,7 +1477,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
             >
               <span className="font-extrabold text-stone-900 text-sm sm:text-base pl-1">Terms & Conditions</span>
-              <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+              <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
             </button>
 
             {/* Privacy Policy */}
@@ -1406,7 +1487,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="w-full bg-white hover:bg-stone-50 text-left p-4 rounded-3xl border border-stone-200/90 shadow-2xs transition-all flex items-center justify-between group cursor-pointer"
             >
               <span className="font-extrabold text-stone-900 text-sm sm:text-base pl-1">Privacy Policy</span>
-              <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#1a115e] group-hover:translate-x-1 transition-all" />
+              <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#002D62] group-hover:translate-x-1 transition-all" />
             </button>
           </div>
 
@@ -1524,7 +1605,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <button
                 type="button"
                 onClick={handleAddAddress}
-                className="w-full bg-[#1a115e] hover:bg-[#241a7d] text-white font-extrabold py-2.5 rounded-xl cursor-pointer"
+                className="w-full bg-[#002D62] hover:bg-[#001D42] text-white font-extrabold py-2.5 rounded-xl cursor-pointer"
               >
                 Save Destination
               </button>
@@ -1602,7 +1683,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <button
               type="button"
               onClick={handleAddCard}
-              className="w-full bg-[#1a115e] hover:bg-[#241a7d] text-white font-extrabold py-2.5 rounded-xl cursor-pointer"
+              className="w-full bg-[#002D62] hover:bg-[#001D42] text-white font-extrabold py-2.5 rounded-xl cursor-pointer"
             >
               Link Payment Method
             </button>
@@ -1636,8 +1717,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   onChange={(e) => setReturnForm({ ...returnForm, orderId: e.target.value })}
                   className="w-full bg-stone-50 border border-stone-300 rounded-xl p-2 text-stone-900 focus:outline-none cursor-pointer"
                 >
-                  <option value="ZKS-8921">Order #ZKS-8921 (24 Jul 2026)</option>
-                  <option value="ZKS-7740">Order #ZKS-7740 (10 Jul 2026)</option>
+                  <option value="PNP-8921">Order #PNP-8921 (24 Jul 2026)</option>
+                  <option value="PNP-7740">Order #PNP-7740 (10 Jul 2026)</option>
                 </select>
               </div>
 
@@ -1674,7 +1755,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <button
               type="button"
               onClick={handleSubmitReturn}
-              className="w-full bg-[#1a115e] hover:bg-[#241a7d] text-white font-extrabold py-2.5 rounded-xl cursor-pointer"
+              className="w-full bg-[#002D62] hover:bg-[#001D42] text-white font-extrabold py-2.5 rounded-xl cursor-pointer"
             >
               Submit Return Request
             </button>
@@ -1689,7 +1770,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
               <LogOut className="w-6 h-6" />
             </div>
-            <h3 className="font-extrabold text-stone-900 text-base">Log Out of TENGA?</h3>
+            <h3 className="font-extrabold text-stone-900 text-base">Log Out of PnP?</h3>
             <p className="text-stone-500">
               You can log back in anytime as <strong>Tendai Moyo</strong>.
             </p>

@@ -28,6 +28,7 @@ import {
 import { Member, StoreId, Currency, Product } from '../types';
 import { SAMPLE_PRODUCTS } from '../data/products';
 import { formatPrice } from '../utils/currency';
+import { getProductImagePath, handleProductImageError } from '../utils/productImages';
 
 interface MyShopViewProps {
   members: Member[];
@@ -213,7 +214,7 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
   }, [previouslyBoughtProducts, searchQuery]);
 
   const copyInviteLink = () => {
-    navigator.clipboard?.writeText('https://tengei.vercel.app/join/moyo-family-group');
+    navigator.clipboard?.writeText('https://tmpnponline.co.zw/join/moyo-family-group');
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
@@ -247,17 +248,17 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
     <div className="space-y-6 pb-20 sm:pb-6 relative">
       {/* Toast Notification Banner */}
       {toastMsg && (
-        <div className="fixed bottom-20 sm:bottom-6 right-4 z-50 bg-[#1a115e] text-[#ffb81c] px-4 py-3 rounded-2xl shadow-2xl border border-[#298bf5]/40 flex items-center gap-3 animate-fade-in max-w-sm text-xs font-bold">
-          <ShoppingBag className="w-4 h-4 text-[#ff4f38] flex-shrink-0 animate-bounce" />
+        <div className="fixed bottom-20 sm:bottom-6 right-4 z-50 bg-[#002D62] text-[#FFB81C] px-4 py-3 rounded-2xl shadow-2xl border border-[#004A99]/40 flex items-center gap-3 animate-fade-in max-w-sm text-xs font-bold">
+          <ShoppingBag className="w-4 h-4 text-[#D0021B] flex-shrink-0 animate-bounce" />
           <span>{toastMsg}</span>
         </div>
       )}
 
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#1a115e] via-[#241a7d] to-[#100a3d] text-white rounded-2xl p-5 sm:p-6 shadow-md border border-[#2a1d82] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#002D62] via-[#003B80] to-[#001D42] text-white rounded-2xl p-5 sm:p-6 shadow-md border border-[#004A99] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="bg-[#ff4f38] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+            <span className="bg-[#D0021B] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
               My Outlets & Group
             </span>
             <span className="text-blue-200 text-xs font-semibold">
@@ -377,7 +378,7 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                     <span className="text-[10px] text-stone-400 block font-semibold">
                       Express Speed
                     </span>
-                    <span className="font-bold text-[#1a115e] mt-0.5 block truncate">
+                    <span className="font-bold text-[#002D62] mt-0.5 block truncate">
                       {depot.expressDelivery}
                     </span>
                   </div>
@@ -391,7 +392,7 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                   {onSelectStoreFilter && (
                     <button
                       onClick={() => onSelectStoreFilter(depot.id)}
-                      className="bg-[#1a115e] hover:bg-[#241a7d] text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                      className="bg-[#002D62] hover:bg-[#001D42] text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
                     >
                       View Catalog
                     </button>
@@ -432,7 +433,7 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                 onClick={() => setMyItemsSection('frequent')}
                 className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 flex-1 cursor-pointer ${
                   myItemsSection === 'frequent'
-                    ? 'bg-[#1a115e] text-white shadow-xs font-extrabold'
+                    ? 'bg-[#002D62] text-white shadow-xs font-extrabold'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
@@ -444,7 +445,7 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                 onClick={() => setMyItemsSection('orders')}
                 className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 flex-1 cursor-pointer ${
                   myItemsSection === 'orders'
-                    ? 'bg-[#1a115e] text-white shadow-xs font-extrabold'
+                    ? 'bg-[#002D62] text-white shadow-xs font-extrabold'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
@@ -513,8 +514,11 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                         {/* Product Info Row */}
                         <div className="flex items-start gap-3">
                           <img
-                            src={product.image}
+                            src={getProductImagePath(product.image)}
                             alt={product.name}
+                            onError={(e) => handleProductImageError(e, product.name, product.category)}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
                             className="w-16 h-16 rounded-xl object-contain bg-stone-50 border border-stone-200 p-1 flex-shrink-0 group-hover:scale-105 transition-transform"
                           />
                           <div className="min-w-0 flex-1">
@@ -574,9 +578,9 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                       <button
                         type="button"
                         onClick={() => handleAddSingleProduct(product.id)}
-                        className="w-full bg-[#1a115e] hover:bg-[#241a7d] text-white font-extrabold text-xs py-2 px-3 rounded-xl transition-all active:scale-98 shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full bg-[#002D62] hover:bg-[#001D42] text-white font-extrabold text-xs py-2 px-3 rounded-xl transition-all active:scale-98 shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
                       >
-                        <Plus className="w-4 h-4 text-[#ffb81c]" />
+                        <Plus className="w-4 h-4 text-[#FFB81C]" />
                         <span>Add to Family Cart</span>
                       </button>
                     </div>
@@ -675,7 +679,7 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                               className="bg-stone-50 p-2.5 rounded-xl border border-stone-200/80 flex items-center justify-between gap-3 text-xs"
                             >
                               <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="bg-[#1a115e] text-white text-[10px] font-black px-2 py-0.5 rounded-md flex-shrink-0">
+                                <span className="bg-[#002D62] text-white text-[10px] font-black px-2 py-0.5 rounded-md flex-shrink-0">
                                   {item.quantity}x
                                 </span>
                                 <div className="min-w-0">
@@ -696,10 +700,10 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleAddSingleProduct(item.productId)}
-                                  className="bg-white hover:bg-stone-100 text-[#1a115e] border border-stone-300 text-[10px] font-bold px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                                  className="bg-white hover:bg-stone-100 text-[#002D62] border border-stone-300 text-[10px] font-bold px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                                   title="Add just this item to cart"
                                 >
-                                  <Plus className="w-3 h-3 text-[#298bf5]" />
+                                  <Plus className="w-3 h-3 text-[#002D62]" />
                                   <span>Add</span>
                                 </button>
                               </div>
@@ -771,7 +775,7 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                 </div>
 
                 <div className="text-right">
-                  <span className="bg-[#1a115e] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full block mb-1">
+                  <span className="bg-[#002D62] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full block mb-1">
                     {member.role}
                   </span>
                   <span className="text-[10px] text-stone-500 font-mono">

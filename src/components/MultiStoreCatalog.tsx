@@ -25,19 +25,20 @@ import {
 } from 'lucide-react';
 import { Product, StoreId, ProductCategory, Currency, Member } from '../types';
 import { formatPrice } from '../utils/currency';
+import { ProductCard } from './ProductCard';
 
 interface MultiStoreCatalogProps {
   products: Product[];
   members: Member[];
   currency: Currency;
   lowDataMode: boolean;
-  onAddToCart: (productId: string, memberId: string, note?: string) => void;
+  onAddToCart: (productId: string, memberId: string, note?: string, quantity?: number) => void;
 }
 
 const STORES: { id: StoreId | 'ALL'; name: string; region: string }[] = [
-  { id: 'ALL', name: 'All Supply Lines', region: 'SA & ZIM' },
-  { id: 'OK_ZIM', name: 'OK Zimbabwe', region: 'Harare' },
-  { id: 'TM_PNP', name: 'TM Pick n Pay', region: 'Bulawayo' },
+  { id: 'ALL', name: 'TM Pick n Pay & All Depots', region: 'SA & ZIM' },
+  { id: 'TM_PNP', name: 'TM Pick n Pay', region: 'Harare & Bulawayo' },
+  { id: 'OK_ZIM', name: 'OK Zimbabwe', region: 'Nationwide' },
   { id: 'SA_WHOLESALE', name: 'SA Wholesalers', region: 'Joburg Export' },
   { id: 'SPAR_ZIM', name: 'Spar Zimbabwe', region: 'Mutare' },
   { id: 'CHOPPIES', name: 'Choppies', region: 'Nationwide' },
@@ -152,13 +153,13 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
         <div className="flex items-center gap-2 border-b border-stone-100 pb-3 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTabMode('ALL')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all whitespace-nowrap cursor-pointer ${
               activeTabMode === 'ALL'
-                ? 'bg-[#1a115e] text-white shadow-md'
+                ? 'bg-[#002D62] text-white shadow-md'
                 : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
             }`}
           >
-            <Package className="w-4 h-4 text-[#ffb81c]" />
+            <Package className="w-4 h-4 text-[#FFB81C]" />
             <span>All Store Catalog</span>
             <span className="bg-white/20 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
               {products.length}
@@ -212,12 +213,12 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
           </div>
 
           {/* Recipient Selector */}
-          <div className="flex items-center gap-2 bg-[#298bf5]/10 px-3 py-2 rounded-xl border border-[#298bf5]/30 text-xs">
-            <span className="font-bold text-[#1a115e] whitespace-nowrap">Adding for:</span>
+          <div className="flex items-center gap-2 bg-[#0082C8]/10 px-3 py-2 rounded-xl border border-[#0082C8]/30 text-xs">
+            <span className="font-bold text-[#002D62] whitespace-nowrap">Adding for:</span>
             <select
               value={selectedMemberId}
               onChange={(e) => setSelectedMemberId(e.target.value)}
-              className="bg-white font-extrabold text-[#1a115e] px-2.5 py-1 rounded-lg border border-[#298bf5]/40 focus:outline-none cursor-pointer text-xs"
+              className="bg-white font-extrabold text-[#002D62] px-2.5 py-1 rounded-lg border border-[#0082C8]/40 focus:outline-none cursor-pointer text-xs"
             >
               {members.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -231,8 +232,8 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
         {/* Depot Line Selector */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs text-stone-500 font-bold px-1">
-            <div className="flex items-center gap-1.5 text-[#1a115e]">
-              <Store className="w-4 h-4 text-[#298bf5]" />
+            <div className="flex items-center gap-1.5 text-[#002D62]">
+              <Store className="w-4 h-4 text-[#0082C8]" />
               <span>Cross-Border Supply Outlets:</span>
             </div>
             <span className="text-stone-500">{filteredProducts.length} Groceries Available</span>
@@ -243,9 +244,9 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
               <button
                 key={s.id}
                 onClick={() => setSelectedStore(s.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   selectedStore === s.id
-                    ? 'bg-[#1a115e] text-white shadow-xs'
+                    ? 'bg-[#002D62] text-white shadow-xs'
                     : 'bg-[#f2f4f7] text-stone-700 hover:bg-stone-200'
                 }`}
               >
@@ -261,9 +262,9 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 selectedCategory === cat.id
-                  ? 'bg-[#ff4f38] text-white shadow-xs'
+                  ? 'bg-[#D0021B] text-white shadow-xs'
                   : 'bg-[#f2f4f7] text-stone-700 hover:bg-stone-200'
               }`}
             >
@@ -292,9 +293,9 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
                 <button
                   key={p.id}
                   onClick={() => setPriceFilter(p.id as any)}
-                  className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all ${
+                  className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
                     priceFilter === p.id
-                      ? 'bg-[#1a115e] text-white shadow-2xs'
+                      ? 'bg-[#002D62] text-white shadow-2xs'
                       : 'bg-[#f2f4f7] text-stone-600 hover:bg-stone-200'
                   }`}
                 >
@@ -334,110 +335,19 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
         </div>
       </div>
 
-      {/* Product Grid: Exactly 2 columns on Mobile, 3 or 4 columns on Tablet & Desktop */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        {filteredProducts.map((product) => {
-          const isAdded = addedAnimationId === product.id;
-
-          return (
-            <div
-              key={product.id}
-              className={`bg-white rounded-2xl overflow-hidden border transition-all duration-200 flex flex-col justify-between group ${
-                product.featured
-                  ? 'border-amber-300 shadow-2xs'
-                  : 'border-stone-200/80 shadow-2xs hover:shadow-md hover:border-stone-300'
-              }`}
-            >
-              {/* Product Image & Badges */}
-              <div className="relative bg-[#f8fafc] aspect-square w-full overflow-hidden flex items-center justify-center p-2">
-                {!lowDataMode ? (
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-[#1a115e] rounded-xl flex flex-col items-center justify-center p-2 text-center text-white">
-                    <ShoppingBag className="w-7 h-7 text-[#ffb81c] mb-1" />
-                    <span className="font-bold text-xs">{product.brand}</span>
-                    <span className="text-[10px] text-blue-200 mt-0.5">{product.unit}</span>
-                  </div>
-                )}
-
-                {/* Regional Depot Tag */}
-                <div className="absolute top-2 left-2 bg-[#1a115e]/90 backdrop-blur-xs text-[#ffb81c] text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-                  <MapPin className="w-2.5 h-2.5 text-[#298bf5]" />
-                  <span className="truncate max-w-[80px] sm:max-w-none">{product.fulfillmentTag}</span>
-                </div>
-              </div>
-
-              {/* Product Info & Pick n Pay asap inspired price + navy plus button */}
-              <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
-                <div>
-                  <div className="text-[10px] text-stone-400 font-bold uppercase tracking-wider mb-0.5">
-                    {product.brand} • {product.unit}
-                  </div>
-
-                  {/* Price Prominently displayed */}
-                  <div className="font-black text-base sm:text-lg text-[#1a115e] tracking-tight">
-                    {getProductPriceString(product)}
-                  </div>
-
-                  {/* Product Title */}
-                  <h3 className="font-bold text-stone-900 text-xs sm:text-sm leading-snug line-clamp-2 mt-0.5">
-                    {product.name}
-                  </h3>
-
-                  {/* Shona / Ndebele Native Name Tag */}
-                  {product.nativeName && (
-                    <div className="text-[11px] font-semibold text-[#298bf5] mt-1 flex items-center gap-1 truncate">
-                      <Tag className="w-3 h-3 text-[#ff4f38] flex-shrink-0" />
-                      <span className="truncate">{product.nativeName}</span>
-                    </div>
-                  )}
-
-                  {/* Previously Bought Badge if available */}
-                  {PREVIOUSLY_BOUGHT_META[product.id] && (
-                    <div className="bg-amber-50 text-amber-900 border border-amber-200/80 rounded-lg p-1.5 text-[10px] font-bold flex items-center justify-between gap-1 mt-1.5">
-                      <span className="flex items-center gap-1 text-amber-800 truncate">
-                        <RotateCcw className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                        <span>Bought {PREVIOUSLY_BOUGHT_META[product.id].timesBought}x</span>
-                      </span>
-                      <span className="text-amber-800/80 font-medium whitespace-nowrap text-[9px]">
-                        Last: {PREVIOUSLY_BOUGHT_META[product.id].lastPurchased}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom Row: Store label & Round Navy Plus Action Button */}
-                <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-1">
-                  <span className="text-[10px] font-semibold text-stone-500 truncate max-w-[90px] sm:max-w-[120px]">
-                    {product.storeName.split(' ')[0]} {product.storeName.split(' ')[1]}
-                  </span>
-
-                  {/* Pick n Pay asap style round button */}
-                  <button
-                    onClick={() => handleAdd(product.id)}
-                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-md flex-shrink-0 ${
-                      isAdded
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-[#1a115e] hover:bg-[#281b85] text-white'
-                    }`}
-                    title={`Add ${product.name} for ${members.find(m => m.id === selectedMemberId)?.name}`}
-                  >
-                    {isAdded ? (
-                      <Check className="w-4 h-4 stroke-[3]" />
-                    ) : (
-                      <Plus className="w-5 h-5 stroke-[2.5]" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      {/* Product Grid: 2 columns on Mobile, 3 or 4 columns on Tablet & Desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        {filteredProducts.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            currency={currency}
+            selectedMemberId={selectedMemberId}
+            lowDataMode={lowDataMode}
+            previouslyBoughtMeta={PREVIOUSLY_BOUGHT_META[product.id]}
+            onAddToCart={onAddToCart}
+          />
+        ))}
       </div>
 
       {filteredProducts.length === 0 && (
@@ -453,7 +363,7 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
               setSelectedCategory('ALL');
               setSearchQuery('');
             }}
-            className="mt-2 bg-[#1a115e] text-[#ffb81c] px-4 py-2 rounded-xl text-xs font-bold"
+            className="mt-2 bg-[#002D62] text-[#FFB81C] px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
           >
             Reset Filters
           </button>

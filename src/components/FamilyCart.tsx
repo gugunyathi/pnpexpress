@@ -46,8 +46,11 @@ import {
 } from 'lucide-react';
 import { CartItem, Member, Currency, SplitMethod, ExchangeRates, Product, DeliveryAddress } from '../types';
 import { formatPrice } from '../utils/currency';
+import { getProductImagePath, handleProductImageError } from '../utils/productImages';
 import { SAMPLE_PRODUCTS } from '../data/products';
 import { DeliveryAddressModal } from './DeliveryAddressModal';
+import { CheckoutModal } from './CheckoutModal';
+import { PaymentOrchestratorDashboardModal } from './PaymentOrchestratorDashboardModal';
 
 interface CallParticipant {
   id: string;
@@ -92,6 +95,7 @@ export const FamilyCart: React.FC<FamilyCartProps> = ({
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('BY_SUBMITTER');
   const [selectedPaymentProvider, setSelectedPaymentProvider] = useState<string>('ecocash');
   const [showCheckoutModal, setShowCheckoutModal] = useState<boolean>(false);
+  const [showOrchestratorHub, setShowOrchestratorHub] = useState<boolean>(false);
   const [checkoutComplete, setCheckoutComplete] = useState<boolean>(false);
 
   // Profile Popup Modal state
@@ -887,8 +891,11 @@ export const FamilyCart: React.FC<FamilyCartProps> = ({
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <img
-                            src={p.image}
+                            src={getProductImagePath(p.image)}
                             alt={p.name}
+                            onError={(e) => handleProductImageError(e, p.name, p.category)}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
                             className="w-11 h-11 rounded-lg object-cover border border-stone-200 flex-shrink-0"
                           />
                           <div className="min-w-0">
@@ -1082,8 +1089,11 @@ export const FamilyCart: React.FC<FamilyCartProps> = ({
                       {/* Item Image & Details */}
                       <div className="flex items-center gap-3">
                         <img
-                          src={item.product.image}
+                          src={getProductImagePath(item.product.image)}
                           alt={item.product.name}
+                          onError={(e) => handleProductImageError(e, item.product.name, item.product.category)}
+                          referrerPolicy="no-referrer"
+                          loading="lazy"
                           className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover border border-stone-200 bg-stone-100 flex-shrink-0 shadow-2xs"
                         />
                         <div>
@@ -1308,14 +1318,26 @@ export const FamilyCart: React.FC<FamilyCartProps> = ({
                   </div>
                 </div>
 
-                <button
-                  onClick={() => setShowCheckoutModal(true)}
-                  disabled={cart.length === 0}
-                  className="w-full sm:w-auto bg-gradient-to-r from-[#1b4332] to-[#2d6a4f] hover:from-[#143427] hover:to-[#22543d] disabled:opacity-50 text-[#d4af37] font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"
-                >
-                  <CreditCard className="w-4 h-4 text-[#d4af37]" />
-                  <span>Proceed to Pay & Dispatch Order</span>
-                </button>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setShowOrchestratorHub(true)}
+                    className="bg-stone-100 hover:bg-stone-200 border border-stone-300 text-[#0e2a47] font-extrabold px-3.5 py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                    title="View Real-Time Multi-Rail Payment Orchestrator & Nostro Audit Logs"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="hidden sm:inline">Orchestrator Hub</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowCheckoutModal(true)}
+                    disabled={cart.length === 0}
+                    className="flex-1 sm:flex-none bg-gradient-to-r from-[#1b4332] to-[#2d6a4f] hover:from-[#143427] hover:to-[#22543d] disabled:opacity-50 text-[#d4af37] font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"
+                  >
+                    <CreditCard className="w-4 h-4 text-[#d4af37]" />
+                    <span>Proceed to Pay & Dispatch Order</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -1737,7 +1759,14 @@ export const FamilyCart: React.FC<FamilyCartProps> = ({
                   className="bg-[#143456]/80 hover:bg-[#19406b] border border-cyan-500/20 p-2.5 rounded-xl flex items-center justify-between gap-3 transition-all"
                 >
                   <div className="flex items-center gap-2.5">
-                    <img src={prod.image} alt={prod.name} className="w-10 h-10 rounded-lg object-cover bg-white" />
+                    <img 
+                      src={getProductImagePath(prod.image)} 
+                      alt={prod.name} 
+                      onError={(e) => handleProductImageError(e, prod.name, prod.category)}
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      className="w-10 h-10 rounded-lg object-cover bg-white" 
+                    />
                     <div>
                       <h4 className="text-xs font-bold text-white leading-tight">{prod.name}</h4>
                       <span className="text-[10px] text-cyan-300 font-semibold">
@@ -1760,146 +1789,28 @@ export const FamilyCart: React.FC<FamilyCartProps> = ({
         </div>
       )}
 
-      {/* Checkout Modal */}
-      {showCheckoutModal && (
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl relative border border-stone-200">
-            <button
-              onClick={() => {
-                setShowCheckoutModal(false);
-                setCheckoutComplete(false);
-              }}
-              className="absolute top-4 right-4 p-1 text-stone-400 hover:text-stone-700"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      {/* Unified PCI-Compliant Diaspora Multi-Rail Checkout Modal */}
+      <CheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        cart={cart}
+        members={members}
+        memberAddresses={memberAddresses}
+        totalUSD={totalUSD}
+        totalZAR={totalZAR}
+        totalZWG={totalZWG}
+        currency={currency}
+        exchangeRates={exchangeRates}
+        onCheckoutSuccess={() => {
+          onClearCart();
+        }}
+      />
 
-            {!checkoutComplete ? (
-              <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-stone-100 pb-3">
-                  <ShieldCheck className="w-6 h-6 text-[#1b4332]" />
-                  <div>
-                    <h3 className="font-extrabold text-stone-900 text-base">
-                      Cross-Border Order Dispatch
-                    </h3>
-                    <p className="text-xs text-stone-500">
-                      Total: {formatCurrency(totalUSD)} ({totalZAR.toFixed(2)} ZAR)
-                    </p>
-                  </div>
-                </div>
-
-                {/* Delivery & Store Pickup Summary Box */}
-                <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2 text-xs">
-                  <div className="font-extrabold text-stone-800 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Truck className="w-4 h-4 text-[#1a115e]" />
-                      <span>Fulfillment & Delivery Locations:</span>
-                    </span>
-                    <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-bold">
-                      Verified 📍
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                    {members.map((m) => {
-                      const addr = memberAddresses[m.id] || m.deliveryAddress;
-                      if (!addr) return null;
-                      return (
-                        <div key={m.id} className="bg-white p-2 rounded-lg border border-stone-200 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <img src={m.avatar} alt={m.name} className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
-                            <span className="font-bold text-stone-900 truncate">{m.name}:</span>
-                          </div>
-                          <div className="text-stone-600 font-semibold text-[11px] truncate max-w-[180px]">
-                            {addr.type === 'STORE_PICKUP' ? (
-                              <span className="text-amber-800 font-bold">🏪 {addr.storeName || 'Store Pickup'}</span>
-                            ) : (
-                              <span>📍 {addr.addressLine}, {addr.city}</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Payment Channel Selection */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-stone-700 block">
-                    Select Payment Method:
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: 'ecocash', name: 'EcoCash ZIM', type: 'Mobile Money' },
-                      { id: 'ozow', name: 'Ozow Instant EFT', type: 'SA Rand' },
-                      { id: 'card', name: 'Visa / Mastercard', type: 'Global Card' },
-                      { id: 'innbucks', name: 'InnBucks / Mukuru', type: 'Remittance' }
-                    ].map((provider) => (
-                      <button
-                        key={provider.id}
-                        type="button"
-                        onClick={() => setSelectedPaymentProvider(provider.id)}
-                        className={`p-2.5 rounded-lg border text-left transition-all ${
-                          selectedPaymentProvider === provider.id
-                            ? 'bg-[#1b4332] text-white border-[#1b4332] font-bold shadow-xs'
-                            : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
-                        }`}
-                      >
-                        <div className="text-xs font-bold">{provider.name}</div>
-                        <div className="text-[10px] opacity-80">{provider.type}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Phone / Reference Number Input */}
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-stone-700">
-                    {selectedPaymentProvider === 'ecocash'
-                      ? 'EcoCash Registered Phone Number:'
-                      : 'Payer Phone / Reference ID:'}
-                  </label>
-                  <input
-                    type="text"
-                    defaultValue="+263 77 212 3456"
-                    className="w-full px-3 py-2 bg-stone-50 text-stone-900 border border-stone-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#1b4332]"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-[#1b4332] hover:bg-[#2d6a4f] text-[#d4af37] font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg transition-all active:scale-95"
-                >
-                  Pay & Dispatch Cross-Border Order
-                </button>
-              </form>
-            ) : (
-              <div className="py-6 text-center space-y-3">
-                <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto animate-bounce" />
-                <h4 className="font-extrabold text-stone-900 text-lg">
-                  Order Successfully Dispatched!
-                </h4>
-                <p className="text-xs text-stone-600 max-w-sm mx-auto">
-                  A WhatsApp confirmation summary has been transmitted to Gogo Moyo and Tinashe. Delivery is assigned to Harare Express Depot.
-                </p>
-
-                <div className="pt-3">
-                  <button
-                    onClick={() => {
-                      setShowCheckoutModal(false);
-                      setCheckoutComplete(false);
-                      onClearCart();
-                    }}
-                    className="bg-[#1b4332] text-white px-5 py-2 rounded-lg font-bold text-xs"
-                  >
-                    Done & Return to Shopping
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Internal Payment Orchestrator & Nostro Audit Hub Modal */}
+      <PaymentOrchestratorDashboardModal
+        isOpen={showOrchestratorHub}
+        onClose={() => setShowOrchestratorHub(false)}
+      />
 
       {/* Member Profile Popup Modal */}
       {selectedMemberModal && (

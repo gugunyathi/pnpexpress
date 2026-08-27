@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { CartItem, Member, Currency, SplitMethod, ExchangeRates, Product, ProductCategory } from '../types';
 import { formatPrice } from '../utils/currency';
+import { getProductImagePath, handleProductImageError } from '../utils/productImages';
 import { SAMPLE_PRODUCTS } from '../data/products';
 
 export interface CallParticipant {
@@ -78,7 +79,7 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
       priceUSD: 3.46,
       originalPriceUSD: 4.99,
       unit: '30-Pack Crate',
-      image: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&q=80&w=400',
+      image: '/images/fresh_beef.jpg',
       tag: 'REGULARS',
       discount: 'SAVE £1.53',
       deliveryInfo: '7-8 AM Delivery • Added by Amanda',
@@ -86,12 +87,12 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
     },
     {
       id: 'sug-2',
-      name: 'Everfine Pure Sunflower Oil',
+      name: 'Sunfoil Pure Sunflower Oil',
       category: 'Cooking & Oils' as ProductCategory,
       priceUSD: 4.12,
       originalPriceUSD: 5.50,
       unit: '2 Litre Bottle',
-      image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80&w=400',
+      image: '/images/sunfoil_oil.jpg',
       tag: 'POPULAR',
       discount: 'SAVE £1.38',
       deliveryInfo: 'Same-day Dispatch • Mazai Makuru',
@@ -104,7 +105,7 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
       priceUSD: 2.85,
       originalPriceUSD: 3.80,
       unit: '2kg Bag',
-      image: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80&w=400',
+      image: '/images/huletts_sugar.jpg',
       tag: 'DAILY ESSENTIAL',
       discount: 'SAVE £0.95',
       deliveryInfo: 'Harare Central Depot • In Stock',
@@ -117,7 +118,7 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
       priceUSD: 2.10,
       originalPriceUSD: 2.80,
       unit: '2L Bottle',
-      image: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&q=80&w=400',
+      image: '/images/clover_milk.jpg',
       tag: 'FRESH DAIRY',
       discount: 'SAVE £0.70',
       deliveryInfo: 'Cold-chain Express • Local Farm',
@@ -391,7 +392,7 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-nowrap overflow-hidden">
               <h1 className="font-black text-xs sm:text-base text-white tracking-wide whitespace-nowrap truncate max-w-[150px] xs:max-w-[200px] sm:max-w-none">
-                TENGA Live Shopping Call
+                PnP Live Shopping Call
               </h1>
               <span className="bg-emerald-500/20 text-emerald-300 text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2.5 py-0.5 rounded-full border border-emerald-400/40 uppercase tracking-wider flex items-center gap-1 shrink-0 whitespace-nowrap">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -576,8 +577,11 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
                     {/* Item Image & Description */}
                     <div className="flex items-center gap-2 sm:gap-3">
                       <img
-                        src={item.product.image}
+                        src={getProductImagePath(item.product.image)}
                         alt={item.product.name}
+                        onError={(e) => handleProductImageError(e, item.product.name, item.product.category)}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
                         className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl object-cover border border-blue-400/20 bg-stone-900 flex-shrink-0"
                       />
                       <div>
@@ -875,8 +879,11 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
               {/* Suggestion Body: Product Image, Details & Quick Action */}
               <div className="bg-[#071320] rounded-xl p-2 sm:p-2.5 border border-[#183a61] flex items-center gap-2 sm:gap-2.5 min-w-0">
                 <img
-                  src={LIVE_SUGGESTIONS[suggestionIndex].image}
+                  src={getProductImagePath(LIVE_SUGGESTIONS[suggestionIndex].image)}
                   alt={LIVE_SUGGESTIONS[suggestionIndex].name}
+                  onError={(e) => handleProductImageError(e, LIVE_SUGGESTIONS[suggestionIndex].name, LIVE_SUGGESTIONS[suggestionIndex].category)}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
                   className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover bg-stone-900 border border-cyan-500/30 shrink-0"
                 />
 
@@ -1208,8 +1215,11 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     <img
-                      src={prod.image}
+                      src={getProductImagePath(prod.image)}
                       alt={prod.name}
+                      onError={(e) => handleProductImageError(e, prod.name, prod.category)}
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
                       className="w-12 h-12 rounded-xl object-cover bg-stone-900 border border-stone-700"
                     />
                     <div>

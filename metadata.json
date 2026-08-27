@@ -1,6 +1,6 @@
 {
-  "name": "TENGA",
-  "description": "Mobile-first cross-border collaborative grocery shopping app for South Africa & Zimbabwe with real-time multi-cart, Gemini multilingual voice AI, and low-data WhatsApp fallback.",
+  "name": "PnP",
+  "description": "Mobile-first cross-border collaborative grocery shopping app for South Africa & Zimbabwe powered by PnP (TM Pick n Pay) with multi-cart, Gemini multilingual voice AI, and low-data WhatsApp fallback.",
   "requestFramePermissions": ["microphone", "camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

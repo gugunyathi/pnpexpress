@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { Product, Currency, Member } from '../types';
 import { formatPrice } from '../utils/currency';
+import { getProductImagePath, handleProductImageError } from '../utils/productImages';
 import { SAMPLE_PRODUCTS } from '../data/products';
 
 interface SmartBasketModalProps {
@@ -77,7 +78,7 @@ const SMART_PRODUCTS_DECK: SmartBasketItem[] = [
       fulfillmentTag: 'Harare Express',
       inStock: true,
       featured: true,
-      image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=500&q=80',
+      image: '/images/clover_milk.jpg',
     },
     badge: 'REGULARS',
     saveText: 'SAVE $1.20',
@@ -102,7 +103,7 @@ const SMART_PRODUCTS_DECK: SmartBasketItem[] = [
       fulfillmentTag: 'Harare Express',
       inStock: true,
       featured: true,
-      image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=500&q=80',
+      image: '/images/white_star_maize.jpg',
     },
     badge: 'DAILY BAKERY',
     saveText: 'SAVE $0.50',
@@ -136,7 +137,7 @@ const SMART_PRODUCTS_DECK: SmartBasketItem[] = [
       fulfillmentTag: 'Nationwide Zim',
       inStock: true,
       featured: true,
-      image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=80',
+      image: '/images/mazoe_orange_crush.jpg',
     },
     badge: 'ZIM HERITAGE',
     saveText: 'SAVE $0.70',
@@ -161,7 +162,7 @@ const SMART_PRODUCTS_DECK: SmartBasketItem[] = [
       fulfillmentTag: 'Nationwide Zim',
       inStock: true,
       featured: true,
-      image: 'https://images.unsplash.com/photo-1597481499750-3e6b22637e12?auto=format&fit=crop&w=500&q=80',
+      image: '/images/tanganda_tea.jpg',
     },
     badge: 'TOP SELLER',
     saveText: 'SAVE $0.40',
@@ -513,8 +514,8 @@ export const SmartBasketModal: React.FC<SmartBasketModalProps> = ({
 
                   {/* Top Badges Row */}
                   <div className="flex items-center justify-between gap-2 z-10">
-                    <span className="bg-[#ffb81c] text-[#1a115e] text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-2xs flex items-center gap-1">
-                      <RotateCcw className="w-3 h-3 text-[#1a115e]" /> {currentItem.badge}
+                    <span className="bg-[#FFB81C] text-[#002D62] text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-2xs flex items-center gap-1">
+                      <RotateCcw className="w-3 h-3 text-[#002D62]" /> {currentItem.badge}
                     </span>
 
                     <button
@@ -537,8 +538,11 @@ export const SmartBasketModal: React.FC<SmartBasketModalProps> = ({
                   {/* Center Image */}
                   <div className="relative w-full h-36 sm:h-40 my-1 rounded-2xl overflow-hidden bg-stone-50 flex items-center justify-center border border-stone-100 group">
                     <img
-                      src={currentItem.product.image}
+                      src={getProductImagePath(currentItem.product.image)}
                       alt={currentItem.product.name}
+                      onError={(e) => handleProductImageError(e, currentItem.product.name, currentItem.product.category)}
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute bottom-2 left-2 bg-stone-900/85 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -555,7 +559,7 @@ export const SmartBasketModal: React.FC<SmartBasketModalProps> = ({
                   {/* Price & Title Details */}
                   <div className="space-y-1 z-10">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl sm:text-3xl font-black text-[#1a115e] tracking-tight">
+                      <span className="text-2xl sm:text-3xl font-black text-[#002D62] tracking-tight">
                         {formatPrice(currentItem.product.priceUSD, currency)}
                       </span>
                       <span className="text-xs text-stone-400 line-through font-bold">
@@ -656,7 +660,7 @@ export const SmartBasketModal: React.FC<SmartBasketModalProps> = ({
                   onClose();
                   onOpenCart();
                 }}
-                className="bg-gradient-to-r from-[#ffb81c] to-amber-400 hover:from-amber-400 hover:to-amber-300 text-[#1a115e] px-3.5 py-1.5 rounded-xl font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1"
+                className="bg-gradient-to-r from-[#FFB81C] to-amber-400 hover:from-amber-400 hover:to-amber-300 text-[#002D62] px-3.5 py-1.5 rounded-xl font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
               >
                 <span>View Cart</span>
               </button>
@@ -677,7 +681,7 @@ export const SmartBasketModal: React.FC<SmartBasketModalProps> = ({
             {/* Expanded Header */}
             <div className="p-4 bg-stone-900/90 border-b border-cyan-500/20 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="bg-[#ffb81c] text-[#1a115e] text-[10px] font-black px-2.5 py-1 rounded-full uppercase">
+                <span className="bg-[#FFB81C] text-[#002D62] text-[10px] font-black px-2.5 py-1 rounded-full uppercase">
                   {expandedItem.badge}
                 </span>
                 <span className="text-xs text-cyan-300 font-extrabold">Full Product Specifications</span>
@@ -696,8 +700,11 @@ export const SmartBasketModal: React.FC<SmartBasketModalProps> = ({
               {/* Product Large Image Lightbox */}
               <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden bg-white border-2 border-cyan-500/30 flex items-center justify-center group shadow-xl">
                 <img
-                  src={expandedItem.product.image}
+                  src={getProductImagePath(expandedItem.product.image)}
                   alt={expandedItem.product.name}
+                  onError={(e) => handleProductImageError(e, expandedItem.product.name, expandedItem.product.category)}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
                   className="w-full h-full object-contain p-2"
                 />
                 <div className="absolute top-3 left-3 bg-rose-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-md">

@@ -124,24 +124,24 @@ export const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({
         <div className="fixed bottom-3 right-3 sm:right-5 z-[999999] pointer-events-auto">
           <button
             onClick={() => setIsCollapsed(false)}
-            className="relative bg-[#1a115e] hover:bg-[#241a7d] text-white px-3.5 py-2.5 rounded-full shadow-2xl border-2 border-[#ffb81c] flex items-center justify-center gap-2 transition-all transform active:scale-95 hover:scale-105"
+            className="relative bg-[#C51D4A] hover:bg-[#a8143a] text-white px-3.5 py-2.5 rounded-full shadow-2xl border-2 border-[#FFB81C] flex items-center justify-center gap-2 transition-all transform active:scale-95 hover:scale-105"
             title="Expand Navigation Menu"
             aria-label="Expand Navigation Menu"
           >
             {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-[#ff4f38] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md border-2 border-white">
+              <span className="absolute -top-1.5 -right-1.5 bg-[#002D62] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md border-2 border-white">
                 {cartCount}
               </span>
             )}
-            <Sparkles className="w-4 h-4 text-[#ffb81c] animate-pulse" />
+            <Sparkles className="w-4 h-4 text-[#FFB81C] animate-pulse" />
             <span className="text-xs font-black text-white pr-0.5">Nav Menu</span>
-            <ChevronUp className="w-4 h-4 text-[#ffb81c]" />
+            <ChevronUp className="w-4 h-4 text-[#FFB81C]" />
           </button>
         </div>
       ) : (
         /* Expanded Floating Bottom Nav Bar Across Screen */
         <div className="fixed bottom-2 left-2 right-2 sm:left-1/2 sm:-translate-x-1/2 sm:max-w-lg z-[999999] pointer-events-auto transition-all duration-300">
-          <div className="bg-[#1a115e]/95 backdrop-blur-xl text-white rounded-2xl px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-2xl border border-[#2a1d82]/90 flex items-center justify-between relative">
+          <div className="bg-[#C51D4A]/95 backdrop-blur-xl text-white rounded-2xl px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-2xl border border-[#a8143a]/90 flex items-center justify-between relative">
             {/* Navigation Tabs */}
             <div className="flex items-center justify-around flex-1 gap-0.5 sm:gap-1">
               {navItems.map((item) => {
@@ -152,14 +152,14 @@ export const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({
                     onClick={() => onSelectTab(item.id)}
                     className={`flex flex-col items-center justify-center py-1 px-1.5 sm:px-3 rounded-xl transition-all relative flex-1 ${
                       isActive
-                        ? 'text-[#ffb81c] font-black scale-105 bg-white/10 shadow-inner'
-                        : 'text-stone-300 hover:text-white hover:bg-white/5 font-medium'
+                        ? 'text-[#FFB81C] font-black scale-105 bg-black/20 shadow-inner'
+                        : 'text-stone-100 hover:text-white hover:bg-white/10 font-medium'
                     }`}
                   >
                     <div className="relative">
                       {item.icon}
                       {item.badge !== undefined && item.badge > 0 && (
-                        <span className="absolute -top-1.5 -right-2 bg-[#ff4f38] text-white text-[9px] font-black px-1.5 py-0.2 rounded-full border border-[#1a115e] shadow-xs">
+                        <span className="absolute -top-1.5 -right-2 bg-[#002D62] text-white text-[9px] font-black px-1.5 py-0.2 rounded-full border border-[#C51D4A] shadow-xs">
                           {item.badge}
                         </span>
                       )}
@@ -169,7 +169,7 @@ export const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({
                     </span>
 
                     {isActive && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#ffb81c] mt-0.5 shadow-2xs" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB81C] mt-0.5 shadow-2xs" />
                     )}
                   </button>
                 );
@@ -179,11 +179,11 @@ export const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({
             {/* Collapse Toggle Button */}
             <button
               onClick={() => setIsCollapsed(true)}
-              className="p-1.5 sm:p-2 text-stone-300 hover:text-white bg-[#100a3d]/90 hover:bg-[#241a7d] rounded-xl transition-all ml-1 border border-[#2a1d82]/80 flex-shrink-0"
+              className="p-1.5 sm:p-2 text-stone-100 hover:text-white bg-[#941135]/90 hover:bg-[#7d0d2c] rounded-xl transition-all ml-1 border border-[#8a0f31]/80 flex-shrink-0"
               title="Collapse Navigation"
               aria-label="Collapse Navigation"
             >
-              <ChevronDown className="w-4 h-4 text-[#ffb81c]" />
+              <ChevronDown className="w-4 h-4 text-[#FFB81C]" />
             </button>
           </div>
         </div>
