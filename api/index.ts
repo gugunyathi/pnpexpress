@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (pathname === '/health' || pathname === '') {
     return res.status(200).json({
       status: 'ok',
-      service: 'TENGA Engine',
+      service: 'PnP Express Cross-Border Engine',
       platform: 'Vercel Serverless (Unified Router)',
       timestamp: new Date().toISOString(),
     });
@@ -302,7 +302,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (pathname === '/checkout' && req.method === 'POST') {
     const { paymentMethod = 'EcoCash' } = req.body || {};
     const totalUSD = DEMO_CART.reduce((sum, item) => sum + item.product.priceUSD * item.quantity, 0);
-    const orderId = `TENGA-${Math.floor(100000 + Math.random() * 900000)}`;
+    const orderId = `PNP-ZW-${Math.floor(100000 + Math.random() * 900000)}`;
     const voucherCode = `VOUCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
     return res.status(200).json({
