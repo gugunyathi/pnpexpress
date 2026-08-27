@@ -5,7 +5,6 @@ import { Server as SocketIOServer } from 'socket.io';
 import path from 'path';
 import multer from 'multer';
 import { GoogleGenAI, Type } from '@google/genai';
-import { createServer as createViteServer } from 'vite';
 import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from './src/data/products';
 import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from './server/models';
 import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from './server/coinbaseCheckout';
@@ -2198,27 +2197,24 @@ Return a JSON object with:
   });
 
   // -------------------------------------------------------------
-  // 15. STATIC ASSETS & VITE SPA SERVING
+  // 15. STATIC ASSETS & SPA FALLBACK
   // -------------------------------------------------------------
   app.use('/images', express.static(path.join(process.cwd(), 'public/images')));
   app.use(express.static(path.join(process.cwd(), 'public')));
 
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
+  if (process.env.NODE_ENV === 'production') {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req: Request, res: Response) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+  // In development, Vite runs on port 5173 with a proxy to this server (port 3000).
+  // Run: npm run dev  — which uses concurrently to start both.
 
   httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`[PnP Server] Express Full-Stack API running on http://0.0.0.0:${PORT}`);
+    console.log(`[PnP Express] Backend API + Socket.IO running on http://0.0.0.0:${PORT}`);
+    console.log(`[PnP Express] Frontend (Vite) → http://localhost:5173`);
   });
 }
 

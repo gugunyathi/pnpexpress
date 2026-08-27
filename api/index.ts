@@ -301,7 +301,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // --- 9. DUAL-PATH COINBASE CHECKOUT & WEBHOOKS ---
-  if ((pathname === '/checkout' || pathname === '/checkout/create') && req.method === 'POST') {
+  if ((pathname === '/checkout' || pathname === '/checkout/create' || pathname === '/checkout/orchestrate') && req.method === 'POST') {
     const { amount, currency = 'USD', orderId, customerEmail, country, card } = req.body || {};
     const totalAmount = amount ? parseFloat(amount) : DEMO_CART.reduce((sum, item) => sum + item.product.priceUSD * item.quantity, 0);
     const targetOrderId = orderId || `PNP-ZW-${Math.floor(100000 + Math.random() * 900000)}`;
