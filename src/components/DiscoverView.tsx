@@ -209,7 +209,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     bundle.productIds.forEach((pId) => {
       const prod = products.find((p) => p.id === pId) || products[0];
       if (prod) {
-        onAddToCart(prod, members[0]?.id || 'm1', 1);
+        onAddToCart(prod.id, members[0]?.id || 'm1', 'Added from Discover Hamper', 1);
       }
     });
     setAddedBundleId(bundle.id);

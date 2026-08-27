@@ -131,16 +131,70 @@ export default function App() {
   };
 
   // Cart operations
-  const handleAddToCart = async (productId: string, memberId: string, note?: string, quantity: number = 1) => {
-    const member = members.find((m) => m.id === memberId) || members[0];
+  const handleAddToCart = async (
+    productId: string,
+    memberId?: string,
+    noteOrQty?: string | number,
+    quantityArg?: number
+  ) => {
+    let note: string | undefined = undefined;
+    let qty: number = 1;
 
+    if (typeof noteOrQty === 'number') {
+      qty = noteOrQty;
+    } else if (typeof noteOrQty === 'string') {
+      note = noteOrQty;
+      if (typeof quantityArg === 'number') {
+        qty = quantityArg;
+      }
+    } else if (typeof quantityArg === 'number') {
+      qty = quantityArg;
+    }
+
+    const targetMemberId = memberId || members[0]?.id || 'mem-1';
+    const member = members.find((m) => m.id === targetMemberId) || members[0];
+    const product = products.find((p) => p.id === productId) || SAMPLE_PRODUCTS.find((p) => p.id === productId);
+
+    if (!product) return;
+
+    // Instant optimistic UI update
+    setCart((prevCart) => {
+      const existingIndex = prevCart.findIndex((i) => i.productId === productId);
+      if (existingIndex > -1) {
+        const updated = [...prevCart];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: updated[existingIndex].quantity + qty,
+          note: note || updated[existingIndex].note
+        };
+        return updated;
+      } else {
+        const newItem: CartItem = {
+          id: `cart-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          productId: product.id,
+          product,
+          quantity: qty,
+          addedByMemberId: member.id,
+          addedByMemberName: member.name,
+          addedByLocation: member.location,
+          channel: member.channel || 'web',
+          addedAt: new Date().toISOString(),
+          note
+        };
+        return [newItem, ...prevCart];
+      }
+    });
+
+    triggerToast(`Added ${qty > 1 ? `${qty}x ` : ''}${product.name} for ${member.name}`);
+
+    // Backend sync
     try {
       const res = await fetch('/api/cart/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productId,
-          quantity: quantity || 1,
+          quantity: qty,
           memberId: member.id,
           memberName: member.name,
           memberLocation: member.location,
@@ -148,13 +202,12 @@ export default function App() {
           note
         })
       });
-      const data = await res.json();
-      if (data.cart) {
-        setCart(data.cart);
-        triggerToast(`Added ${quantity > 1 ? `${quantity}x ` : ''}item for ${member.name}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.cart) setCart(data.cart);
       }
     } catch (err) {
-      console.error('Add to cart error:', err);
+      console.error('Add to cart sync error:', err);
     }
   };
 
