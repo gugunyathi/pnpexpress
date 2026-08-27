@@ -1,4 +1,4 @@
-# 🛒 ZikiShop — Africa's Cross-Border Collaborative Grocery & Remittance Engine
+# 🛒 PnPExpress — Africa's Cross-Border Collaborative Grocery & Remittance Engine
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18+-green.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
@@ -8,7 +8,7 @@
 [![Socket.io](https://img.shields.io/badge/Socket.io-Real--Time-black.svg)](https://socket.io/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC.svg)](https://tailwindcss.com/)
 
-**ZikiShop** is a production-grade, real-time collaborative grocery shopping and diaspora remittance engine built for families across **South Africa (SA), the United Kingdom (UK), the United States (US), and Zimbabwe (ZIM)**. 
+**PnPExpress** is a production-grade, real-time collaborative grocery shopping and diaspora remittance engine built for families across **South Africa (SA), the United Kingdom (UK), the United States (US), and Zimbabwe (ZIM)**. 
 
 It connects diaspora sponsors directly with recipients back home through a synchronized family cart, live interactive video shopping concierges, AI-powered multilingual voice ordering (in Shona, Ndebele, Zulu, and English), automated multi-rail payment fallback orchestration, and end-to-end dispatch tracking with official Reserve Bank of Zimbabwe (RBZ) compliant commercial tax invoices.
 
@@ -107,8 +107,8 @@ It connects diaspora sponsors directly with recipients back home through a synch
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/gugunyathi/zikishop.git
-cd zikishop
+git clone https://github.com/gugunyathi/pnpexpress.git
+cd pnpexpress
 ```
 
 ### 2. Install Dependencies
