@@ -1,4 +1,5 @@
 import { Product, Member, ExchangeRates } from '../types';
+import { PRODUCT_BASE64_IMAGES } from './productImageBase64';
 
 export const INITIAL_EXCHANGE_RATES: ExchangeRates = {
   USD_ZAR: 18.50, // 1 USD = 18.50 South African Rand
@@ -22,7 +23,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'Harare Express',
     inStock: true,
     featured: true,
-    image: '/images/tastic_rice.jpg'
+    image: PRODUCT_BASE64_IMAGES['tastic_rice']
   },
   {
     id: 'prod-2',
@@ -39,7 +40,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'SA Export to Zim',
     inStock: true,
     featured: true,
-    image: '/images/white_star_maize.jpg'
+    image: PRODUCT_BASE64_IMAGES['white_star_maize']
   },
   {
     id: 'prod-3',
@@ -56,7 +57,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'Bulawayo Click & Collect',
     inStock: true,
     featured: true,
-    image: '/images/fruit_veg_box.jpg'
+    image: PRODUCT_BASE64_IMAGES['fruit_veg_box']
   },
   {
     id: 'prod-4',
@@ -72,7 +73,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '5L bottle',
     fulfillmentTag: 'SA Export to Zim',
     inStock: true,
-    image: '/images/sunfoil_oil.jpg'
+    image: PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil']
   },
   {
     id: 'prod-5',
@@ -89,7 +90,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'Harare Express',
     inStock: true,
     featured: true,
-    image: '/images/huletts_sugar.jpg'
+    image: PRODUCT_BASE64_IMAGES['huletts_sugar']
   },
   {
     id: 'prod-6',
@@ -106,7 +107,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'Nationwide Zim',
     inStock: true,
     featured: true,
-    image: '/images/mazoe_orange_crush.jpg'
+    image: PRODUCT_BASE64_IMAGES['mazoe_orange_crush']
   },
   {
     id: 'prod-7',
@@ -122,7 +123,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '100 tea bags',
     fulfillmentTag: 'Mutare Depot',
     inStock: true,
-    image: '/images/tanganda_tea.jpg'
+    image: PRODUCT_BASE64_IMAGES['tanganda_tea']
   },
   {
     id: 'prod-8',
@@ -139,7 +140,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'SA Export to Zim',
     inStock: true,
     featured: true,
-    image: '/images/solar_lighting_system.jpg'
+    image: PRODUCT_BASE64_IMAGES['solar_lighting_system']
   },
   {
     id: 'prod-9',
@@ -155,7 +156,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '6x1L carton',
     fulfillmentTag: 'Bulawayo Click & Collect',
     inStock: true,
-    image: '/images/clover_milk.jpg'
+    image: PRODUCT_BASE64_IMAGES['clover_milk']
   },
   {
     id: 'prod-10',
@@ -171,7 +172,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '500g bar',
     fulfillmentTag: 'Harare Express',
     inStock: true,
-    image: '/images/sunlight_soap.jpg'
+    image: PRODUCT_BASE64_IMAGES['sunlight_soap']
   },
   {
     id: 'prod-11',
@@ -187,7 +188,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '2kg fresh cut',
     fulfillmentTag: 'Harare Express',
     inStock: true,
-    image: '/images/fresh_beef.jpg'
+    image: PRODUCT_BASE64_IMAGES['fresh_beef']
   },
   {
     id: 'prod-12',
@@ -203,7 +204,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '56 diapers pack',
     fulfillmentTag: 'SA Export to Zim',
     inStock: true,
-    image: '/images/pampers_pants.jpg'
+    image: PRODUCT_BASE64_IMAGES['pampers_pants']
   }
 ];
 

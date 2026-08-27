@@ -1,178 +1,227 @@
 import React from 'react';
+import { PRODUCT_BASE64_IMAGES } from '../data/productImageBase64';
 
 /**
- * Product Image Resolution & Fallback Engine
- * Uses the authentic packshot images uploaded by the user stored in /public/images/.
+ * Option 1: Direct Inline Base64 Data Bundle
+ * Uses 100% embedded, offline, high-definition uploaded product packshots.
+ * Zero HTTP requests needed, zero placeholder fallbacks.
  */
 
-// Local packshot image paths covering both original and uploaded filename variants
-const LOCAL_PRODUCT_IMAGES: Record<string, string> = {
-  // Rice / Tastic (5kg)
-  'tastic': '/images/tastic_rice.jpg',
-  'tastic_rice': '/images/tastic_rice.jpg',
-  'tastic rice 5kg': '/images/tastic_rice.jpg',
-  'tastic rice 5kg.webp': '/images/tastic_rice.jpg',
-  'rice': '/images/tastic_rice.jpg',
-  'mupunga': '/images/tastic_rice.jpg',
-  'ilayisi': '/images/tastic_rice.jpg',
-  
-  // Maize Meal / White Star (5kg) / Hupfu
-  'white star': '/images/white_star_maize.jpg',
-  'white_star_maize': '/images/white_star_maize.jpg',
-  'mealie meal': '/images/white_star_maize.jpg',
-  'mealie meal.webp': '/images/white_star_maize.jpg',
-  'maize': '/images/white_star_maize.jpg',
-  'mealie': '/images/white_star_maize.jpg',
-  'hupfu': '/images/white_star_maize.jpg',
-  'impuphu': '/images/white_star_maize.jpg',
-  
-  // Fruit & Vegetable Box (10kg)
-  'fruit': '/images/fruit_veg_box.jpg',
-  'veg': '/images/fruit_veg_box.jpg',
-  'vegetable': '/images/fruit_veg_box.jpg',
-  'fruit_veg_box': '/images/fruit_veg_box.jpg',
-  'vegetable box 10kg': '/images/fruit_veg_box.jpg',
-  'vegetable box 10kg.jpg': '/images/fruit_veg_box.jpg',
-  'fruit and vegetable box 10kg': '/images/fruit_veg_box.jpg',
-  'fruit and vegetable box 10kg.jpg': '/images/fruit_veg_box.jpg',
-  'produce': '/images/fruit_veg_box.jpg',
-  
-  // Cooking Oil / Sunfoil (2L / 5L)
-  'sunfoil': '/images/sunfoil_oil.jpg',
-  'sunfoil_oil': '/images/sunfoil_oil.jpg',
-  'cooking oil': '/images/sunfoil_oil.jpg',
-  'cooking oil 2l': '/images/sunfoil_oil.jpg',
-  'cooking oil 2l.webp': '/images/sunfoil_oil.jpg',
-  'cooking oil 5l': '/images/sunfoil_oil.jpg',
-  'cooking oil 5l.webp': '/images/sunfoil_oil.jpg',
-  'oil': '/images/sunfoil_oil.jpg',
-  'cooking': '/images/sunfoil_oil.jpg',
-  'mafuta': '/images/sunfoil_oil.jpg',
-  
-  // Sugar / Huletts (5kg)
-  'sugar': '/images/huletts_sugar.jpg',
-  'huletts': '/images/huletts_sugar.jpg',
-  'huletts_sugar': '/images/huletts_sugar.jpg',
-  'sugar 5kg': '/images/huletts_sugar.jpg',
-  'sugar 5kg.webp': '/images/huletts_sugar.jpg',
-  'chigaku': '/images/huletts_sugar.jpg',
-  'unshukela': '/images/huletts_sugar.jpg',
-  
-  // Mazoe Orange Crush (2L)
-  'mazoe': '/images/mazoe_orange_crush.jpg',
-  'mazoe_orange_crush': '/images/mazoe_orange_crush.jpg',
-  'mazoe orange crush 2l': '/images/mazoe_orange_crush.jpg',
-  'mazoe orange crush 2l.webp': '/images/mazoe_orange_crush.jpg',
-  'crush': '/images/mazoe_orange_crush.jpg',
-  'orange': '/images/mazoe_orange_crush.jpg',
-  'cordial': '/images/mazoe_orange_crush.jpg',
-  
-  // Tanganda Tea (100s)
-  'tea': '/images/tanganda_tea.jpg',
-  'tanganda': '/images/tanganda_tea.jpg',
-  'tanganda_tea': '/images/tanganda_tea.jpg',
-  'tanganda tagless tea bags 100': '/images/tanganda_tea.jpg',
-  'tanganda tagless tea bags 100.webp': '/images/tanganda_tea.jpg',
-  'tii': '/images/tanganda_tea.jpg',
-  'chai': '/images/tanganda_tea.jpg',
-  
-  // Solar Kit / Lighting System
-  'solar': '/images/solar_lighting_system.jpg',
-  'solar_lighting_system': '/images/solar_lighting_system.jpg',
-  'solar kit': '/images/solar_lighting_system.jpg',
-  'solar kit.webp': '/images/solar_lighting_system.jpg',
-  'power': '/images/solar_lighting_system.jpg',
-  'lighting': '/images/solar_lighting_system.jpg',
-  'liteng': '/images/solar_lighting_system.jpg',
-  'gizzu': '/images/solar_lighting_system.jpg',
-  
-  // Milk / Clover UHT (6x1L)
-  'milk': '/images/clover_milk.jpg',
-  'clover': '/images/clover_milk.jpg',
-  'clover_milk': '/images/clover_milk.jpg',
-  'full cream milk carton 6x1l': '/images/clover_milk.jpg',
-  'full cream milk carton 6x1l.webp': '/images/clover_milk.jpg',
-  'mukaka': '/images/clover_milk.jpg',
-  'ubisi': '/images/clover_milk.jpg',
-  
-  // Soap / Sunlight (500g)
-  'soap': '/images/sunlight_soap.jpg',
-  'sunlight': '/images/sunlight_soap.jpg',
-  'sunlight_soap': '/images/sunlight_soap.jpg',
-  'bar soap': '/images/sunlight_soap.jpg',
-  'bar soap.webp': '/images/sunlight_soap.jpg',
-  'sipo': '/images/sunlight_soap.jpg',
-  'isipho': '/images/sunlight_soap.jpg',
-  
-  // Beef Blade Roast (2kg) / Meat
-  'beef': '/images/fresh_beef.jpg',
-  'fresh_beef': '/images/fresh_beef.jpg',
-  'beef blade roast 2kg': '/images/fresh_beef.jpg',
-  'beef blade roast 2kg.webp': '/images/fresh_beef.jpg',
-  'meat': '/images/fresh_beef.jpg',
-  'roast': '/images/fresh_beef.jpg',
-  'nyama': '/images/fresh_beef.jpg',
-  'butchery': '/images/fresh_beef.jpg',
-  'eggs': '/images/fresh_beef.jpg',
-  
-  // Pampers Pants Size 3 (56s)
-  'pampers': '/images/pampers_pants.jpg',
-  'pampers_pants': '/images/pampers_pants.jpg',
-  'pampers 56': '/images/pampers_pants.jpg',
-  'pampers 56.webp': '/images/pampers_pants.jpg',
-  'baby': '/images/pampers_pants.jpg',
-  'pants': '/images/pampers_pants.jpg',
-  'diaper': '/images/pampers_pants.jpg',
-  'nappy': '/images/pampers_pants.jpg',
+// Normalized lookup map for all search terms, filenames, and product names
+const DIRECT_IMAGE_MAP: Record<string, string> = {
+  // Rice / Tastic
+  'tastic': PRODUCT_BASE64_IMAGES['tastic_rice'],
+  'tastic_rice': PRODUCT_BASE64_IMAGES['tastic_rice'],
+  'tastic rice 5kg': PRODUCT_BASE64_IMAGES['tastic_rice'],
+  'tastic rice 5kg.webp': PRODUCT_BASE64_IMAGES['tastic_rice'],
+  'tastic rice 5kg.jpg': PRODUCT_BASE64_IMAGES['tastic_rice'],
+  '/images/tastic_rice.jpg': PRODUCT_BASE64_IMAGES['tastic_rice'],
+  '/images/tastic_rice.webp': PRODUCT_BASE64_IMAGES['tastic_rice'],
+  'rice': PRODUCT_BASE64_IMAGES['tastic_rice'],
+  'mupunga': PRODUCT_BASE64_IMAGES['tastic_rice'],
+  'ilayisi': PRODUCT_BASE64_IMAGES['tastic_rice'],
+
+  // Maize Meal / White Star
+  'white star': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  'white_star_maize': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  'mealie meal': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  'mealie meal.webp': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  'mealie meal.jpg': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  '/images/white_star_maize.jpg': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  '/images/white_star_maize.webp': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  'maize': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  'mealie': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  'hupfu': PRODUCT_BASE64_IMAGES['white_star_maize'],
+  'impuphu': PRODUCT_BASE64_IMAGES['white_star_maize'],
+
+  // Fruit & Veg
+  'fruit': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'veg': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'vegetable': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'fruit_veg_box': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'vegetable box 10kg': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'vegetable box 10kg.jpg': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'vegetable box 10kg.webp': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'fruit and vegetable box 10kg': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'fruit and vegetable box 10kg.jpg': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'fruit and vegetable box 10kg.webp': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  '/images/fruit_veg_box.jpg': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  '/images/fruit_veg_box.webp': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+  'produce': PRODUCT_BASE64_IMAGES['fruit_veg_box'],
+
+  // Cooking Oil / Sunfoil
+  'sunfoil': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'sunfoil_oil': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'cooking oil': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'cooking oil 2l': PRODUCT_BASE64_IMAGES['sunfoil_oil_2l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'cooking oil 2l.webp': PRODUCT_BASE64_IMAGES['sunfoil_oil_2l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'cooking oil 2l.jpg': PRODUCT_BASE64_IMAGES['sunfoil_oil_2l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'cooking oil 5l': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'cooking oil 5l.webp': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'cooking oil 5l.jpg': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  '/images/sunfoil_oil.jpg': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  '/images/sunfoil_oil.webp': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'oil': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'cooking': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+  'mafuta': PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil'],
+
+  // Sugar / Huletts
+  'sugar': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+  'huletts': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+  'huletts_sugar': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+  'sugar 5kg': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+  'sugar 5kg.webp': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+  'sugar 5kg.jpg': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+  '/images/huletts_sugar.jpg': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+  '/images/huletts_sugar.webp': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+  'chigaku': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+  'unshukela': PRODUCT_BASE64_IMAGES['huletts_sugar'],
+
+  // Mazoe Orange Crush
+  'mazoe': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+  'mazoe_orange_crush': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+  'mazoe orange crush 2l': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+  'mazoe orange crush 2l.webp': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+  'mazoe orange crush 2l.jpg': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+  '/images/mazoe_orange_crush.jpg': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+  '/images/mazoe_orange_crush.webp': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+  'crush': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+  'orange': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+  'cordial': PRODUCT_BASE64_IMAGES['mazoe_orange_crush'],
+
+  // Tanganda Tea
+  'tea': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+  'tanganda': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+  'tanganda_tea': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+  'tanganda tagless tea bags 100': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+  'tanganda tagless tea bags 100.webp': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+  'tanganda tagless tea bags 100.jpg': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+  '/images/tanganda_tea.jpg': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+  '/images/tanganda_tea.webp': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+  'tii': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+  'chai': PRODUCT_BASE64_IMAGES['tanganda_tea'],
+
+  // Solar Kit
+  'solar': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  'solar_lighting_system': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  'solar kit': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  'solar kit.webp': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  'solar kit.jpg': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  '/images/solar_lighting_system.jpg': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  '/images/solar_lighting_system.webp': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  'power': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  'lighting': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  'liteng': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+  'gizzu': PRODUCT_BASE64_IMAGES['solar_lighting_system'],
+
+  // Milk / Clover
+  'milk': PRODUCT_BASE64_IMAGES['clover_milk'],
+  'clover': PRODUCT_BASE64_IMAGES['clover_milk'],
+  'clover_milk': PRODUCT_BASE64_IMAGES['clover_milk'],
+  'full cream milk carton 6x1l': PRODUCT_BASE64_IMAGES['clover_milk'],
+  'full cream milk carton 6x1l.webp': PRODUCT_BASE64_IMAGES['clover_milk'],
+  'full cream milk carton 6x1l.jpg': PRODUCT_BASE64_IMAGES['clover_milk'],
+  '/images/clover_milk.jpg': PRODUCT_BASE64_IMAGES['clover_milk'],
+  '/images/clover_milk.webp': PRODUCT_BASE64_IMAGES['clover_milk'],
+  'mukaka': PRODUCT_BASE64_IMAGES['clover_milk'],
+  'ubisi': PRODUCT_BASE64_IMAGES['clover_milk'],
+
+  // Soap / Sunlight
+  'soap': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+  'sunlight': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+  'sunlight_soap': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+  'bar soap': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+  'bar soap.webp': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+  'bar soap.jpg': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+  '/images/sunlight_soap.jpg': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+  '/images/sunlight_soap.webp': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+  'sipo': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+  'isipho': PRODUCT_BASE64_IMAGES['sunlight_soap'],
+
+  // Beef / Meat
+  'beef': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  'fresh_beef': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  'beef blade roast 2kg': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  'beef blade roast 2kg.webp': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  'beef blade roast 2kg.jpg': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  '/images/fresh_beef.jpg': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  '/images/fresh_beef.webp': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  'meat': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  'roast': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  'nyama': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  'butchery': PRODUCT_BASE64_IMAGES['fresh_beef'],
+  'eggs': PRODUCT_BASE64_IMAGES['fresh_beef'],
+
+  // Pampers
+  'pampers': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  'pampers_pants': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  'pampers 56': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  'pampers 56.webp': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  'pampers 56.jpg': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  '/images/pampers_pants.jpg': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  '/images/pampers_pants.webp': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  'baby': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  'pants': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  'diaper': PRODUCT_BASE64_IMAGES['pampers_pants'],
+  'nappy': PRODUCT_BASE64_IMAGES['pampers_pants'],
 };
 
-const DEFAULT_GROCERY_IMAGE = '/images/fruit_veg_box.jpg';
+const DEFAULT_IMAGE = PRODUCT_BASE64_IMAGES['fruit_veg_box'];
 
 /**
- * Normalizes an image path to work seamlessly across root, relative, or nested routing URLs.
+ * Directly returns the offline, instant Base64 data URI of the product image.
+ * No network latency, no iframe path errors, no 404s.
  */
-export function getProductImagePath(imagePath?: string): string {
-  if (!imagePath) return DEFAULT_GROCERY_IMAGE;
-  
-  // If it's already an external absolute URL, return directly
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
+export function getProductImagePath(imagePathOrName?: string): string {
+  if (!imagePathOrName) return DEFAULT_IMAGE;
+
+  // If it is already a base64 data URI, return immediately
+  if (imagePathOrName.startsWith('data:image/')) {
+    return imagePathOrName;
   }
-  
-  // Clean up relative paths
-  let clean = imagePath.trim();
-  
-  // Check if filename without leading slash matches our catalog dictionary
-  const lookupKey = clean.replace(/^\/images\//, '').replace(/^\//, '').toLowerCase();
-  if (LOCAL_PRODUCT_IMAGES[lookupKey]) {
-    return LOCAL_PRODUCT_IMAGES[lookupKey];
+
+  // Exact lookup match
+  const rawKey = imagePathOrName.toLowerCase().trim();
+  if (DIRECT_IMAGE_MAP[rawKey]) {
+    return DIRECT_IMAGE_MAP[rawKey];
   }
-  
-  if (!clean.startsWith('/')) {
-    clean = '/' + clean;
+
+  // Clean lookup (remove /images/ and extensions)
+  const cleanKey = rawKey
+    .replace(/^\/images\//, '')
+    .replace(/^\//, '');
+
+  if (DIRECT_IMAGE_MAP[cleanKey]) {
+    return DIRECT_IMAGE_MAP[cleanKey];
   }
-  
-  return clean;
+
+  // Fuzzy match on product name terms
+  for (const [key, b64] of Object.entries(DIRECT_IMAGE_MAP)) {
+    if (rawKey.includes(key) || cleanKey.includes(key)) {
+      return b64;
+    }
+  }
+
+  return DEFAULT_IMAGE;
 }
 
 /**
- * Returns the exact authentic photo image URL based on product name or category.
+ * Fallback handler: returns the exact Base64 image data URI for the product.
  */
 export function getProductFallbackImage(productName?: string, category?: string): string {
   const query = `${productName || ''} ${category || ''}`.toLowerCase();
   
-  for (const [key, imagePath] of Object.entries(LOCAL_PRODUCT_IMAGES)) {
+  for (const [key, b64] of Object.entries(DIRECT_IMAGE_MAP)) {
     if (query.includes(key)) {
-      return imagePath;
+      return b64;
     }
   }
   
-  return DEFAULT_GROCERY_IMAGE;
+  return DEFAULT_IMAGE;
 }
 
 /**
- * Helper to handle image error events on <img> elements.
- * Replaces any broken src with the matching real packshot photo from /public/images/.
+ * Image error handler that immediately assigns the embedded Base64 image.
  */
 export function handleProductImageError(
   e: React.SyntheticEvent<HTMLImageElement, Event>,
@@ -180,9 +229,9 @@ export function handleProductImageError(
   category?: string
 ): void {
   const target = e.currentTarget;
-  const fallbackPath = getProductFallbackImage(productName, category);
+  const fallback = getProductFallbackImage(productName, category);
   
-  if (target.src !== fallbackPath && !target.src.endsWith(fallbackPath)) {
-    target.src = fallbackPath;
+  if (target.src !== fallback) {
+    target.src = fallback;
   }
 }
