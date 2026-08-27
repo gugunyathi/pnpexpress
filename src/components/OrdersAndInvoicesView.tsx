@@ -35,6 +35,7 @@ import { Currency } from '../types';
 import { formatPrice } from '../utils/currency';
 import { api, PastOrder as ApiPastOrder } from '../utils/api';
 import { socket } from '../utils/socket';
+import { getProductImagePath, handleProductImageError } from '../utils/productImages';
 
 export interface OrderItem {
   id: string;
@@ -692,12 +693,12 @@ export const OrdersAndInvoicesView: React.FC<OrdersAndInvoicesViewProps> = ({
                             className="flex items-center gap-3 bg-stone-50/70 p-2.5 rounded-2xl border border-stone-200/80"
                           >
                             <img
-                              src={item.image}
+                              src={getProductImagePath(item.image)}
                               alt={item.name}
                               className="w-12 h-12 object-contain bg-white rounded-xl p-1 border border-stone-200 flex-shrink-0"
-                              onError={(e) => {
-                                e.currentTarget.src = '/images/fruit_veg_box.jpg';
-                              }}
+                              onError={(e) => handleProductImageError(e, item.name)}
+                              referrerPolicy="no-referrer"
+                              loading="lazy"
                             />
                             <div className="min-w-0 flex-1">
                               <h4 className="font-extrabold text-stone-900 text-xs truncate" title={item.name}>

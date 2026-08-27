@@ -28,6 +28,7 @@ import {
 import { Member, StoreId, Currency, Product } from '../types';
 import { SAMPLE_PRODUCTS } from '../data/products';
 import { formatPrice } from '../utils/currency';
+import { getProductImagePath, handleProductImageError } from '../utils/productImages';
 
 interface MyShopViewProps {
   members: Member[];
@@ -513,8 +514,11 @@ export const MyShopView: React.FC<MyShopViewProps> = ({
                         {/* Product Info Row */}
                         <div className="flex items-start gap-3">
                           <img
-                            src={product.image}
+                            src={getProductImagePath(product.image)}
                             alt={product.name}
+                            onError={(e) => handleProductImageError(e, product.name, product.category)}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
                             className="w-16 h-16 rounded-xl object-contain bg-stone-50 border border-stone-200 p-1 flex-shrink-0 group-hover:scale-105 transition-transform"
                           />
                           <div className="min-w-0 flex-1">

@@ -879,8 +879,11 @@ export const LiveCallShoppingView: React.FC<LiveCallShoppingViewProps> = ({
               {/* Suggestion Body: Product Image, Details & Quick Action */}
               <div className="bg-[#071320] rounded-xl p-2 sm:p-2.5 border border-[#183a61] flex items-center gap-2 sm:gap-2.5 min-w-0">
                 <img
-                  src={LIVE_SUGGESTIONS[suggestionIndex].image}
+                  src={getProductImagePath(LIVE_SUGGESTIONS[suggestionIndex].image)}
                   alt={LIVE_SUGGESTIONS[suggestionIndex].name}
+                  onError={(e) => handleProductImageError(e, LIVE_SUGGESTIONS[suggestionIndex].name, LIVE_SUGGESTIONS[suggestionIndex].category)}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
                   className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover bg-stone-900 border border-cyan-500/30 shrink-0"
                 />
 

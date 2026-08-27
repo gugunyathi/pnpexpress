@@ -1759,7 +1759,14 @@ export const FamilyCart: React.FC<FamilyCartProps> = ({
                   className="bg-[#143456]/80 hover:bg-[#19406b] border border-cyan-500/20 p-2.5 rounded-xl flex items-center justify-between gap-3 transition-all"
                 >
                   <div className="flex items-center gap-2.5">
-                    <img src={prod.image} alt={prod.name} className="w-10 h-10 rounded-lg object-cover bg-white" />
+                    <img 
+                      src={getProductImagePath(prod.image)} 
+                      alt={prod.name} 
+                      onError={(e) => handleProductImageError(e, prod.name, prod.category)}
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      className="w-10 h-10 rounded-lg object-cover bg-white" 
+                    />
                     <div>
                       <h4 className="text-xs font-bold text-white leading-tight">{prod.name}</h4>
                       <span className="text-[10px] text-cyan-300 font-semibold">
