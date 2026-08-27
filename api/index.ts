@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from '../src/data/products';
+import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from '../server/models';
 
 // Shared In-Memory Demo Cart for Vercel Serverless Session
 const DEMO_CART = [
@@ -335,39 +336,120 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // --- 11. AUTH ENDPOINTS ---
+  // Connect to MongoDB Atlas
+  try {
+    await connectDB();
+  } catch (dbErr) {
+    console.error('[Vercel Serverless DB Connect Error]:', dbErr);
+  }
+
+  // --- 11. AUTH & SESSIONS ENDPOINTS (MongoDB Atlas) ---
   if (pathname === '/auth/signup' && req.method === 'POST') {
-    const { email, name } = req.body || {};
-    const demoAddress = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    return res.status(201).json({
-      success: true,
-      user: {
-        id: 'demo-user-' + Date.now(),
-        email: email || 'demo@tenga.co.zw',
-        name: name || 'Demo User',
+    try {
+      const { email, name, password } = req.body || {};
+      if (!email || !name) {
+        return res.status(400).json({ error: 'Email and name are required' });
+      }
+
+      let existing = await User.findOne({ email });
+      if (existing) {
+        return res.status(400).json({ error: 'User already exists' });
+      }
+
+      const demoAddress = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      const newUser = await User.create({
+        email,
+        name,
+        password: password || 'demo_pass_123',
         role: 'Sponsor / Diaspora',
         walletAddress: demoAddress,
-      },
-      token: 'demo-jwt-token-placeholder',
-    });
+        cdpProjectId: process.env.VITE_CDP_PROJECT_ID
+      });
+
+      await ActivityLog.create({
+        userId: newUser._id.toString(),
+        userEmail: newUser.email,
+        action: 'SIGNUP_SUCCESS',
+        details: { cdpProjectId: process.env.VITE_CDP_PROJECT_ID, walletAddress: demoAddress }
+      });
+
+      await CDPWallet.create({
+        userId: newUser._id.toString(),
+        userEmail: newUser.email,
+        address: demoAddress,
+        projectId: process.env.VITE_CDP_PROJECT_ID
+      });
+
+      return res.status(201).json({
+        success: true,
+        user: newUser,
+        token: `jwt_token_${newUser._id}`,
+        cdpWallet: {
+          address: demoAddress,
+          projectId: process.env.VITE_CDP_PROJECT_ID
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   if (pathname === '/auth/login' && req.method === 'POST') {
-    const { email } = req.body || {};
-    return res.status(200).json({
-      success: true,
-      user: {
-        id: 'demo-user-1',
-        email: email || 'demo@tenga.co.zw',
-        name: 'Tinashe Moyo',
-        role: 'Sponsor / Diaspora',
-        walletAddress: '0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18',
-      },
-      token: 'demo-jwt-token-placeholder',
-    });
+    try {
+      const { email } = req.body || {};
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+
+      let user = await User.findOne({ email });
+      if (!user) {
+        const demoAddress = '0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18';
+        user = await User.create({
+          email,
+          name: email.split('@')[0].replace('.', ' '),
+          role: 'Sponsor / Diaspora',
+          walletAddress: demoAddress,
+          cdpProjectId: process.env.VITE_CDP_PROJECT_ID
+        });
+      } else {
+        user.lastLoginAt = new Date();
+        await user.save();
+      }
+
+      await ActivityLog.create({
+        userId: user._id.toString(),
+        userEmail: user.email,
+        action: 'LOGIN_SUCCESS',
+        details: { cdpProjectId: process.env.VITE_CDP_PROJECT_ID }
+      });
+
+      return res.status(200).json({
+        success: true,
+        user,
+        token: `jwt_token_${user._id}`,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   if (pathname === '/auth/me') {
-    return res.status(200).json({ authenticated: false });
+    try {
+      const user = await User.findOne().sort({ lastLoginAt: -1 });
+      if (!user) return res.status(200).json({ authenticated: false });
+      return res.status(200).json({ authenticated: true, user });
+    } catch (err) {
+      return res.status(200).json({ authenticated: false });
+    }
+  }
+
+  if (pathname === '/auth/sessions') {
+    try {
+      const sessions = await ActivityLog.find().sort({ timestamp: -1 }).limit(50);
+      return res.status(200).json({ success: true, sessions });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   if (pathname === '/auth/logout' && req.method === 'POST') {

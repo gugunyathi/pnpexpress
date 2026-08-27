@@ -7,6 +7,7 @@ import multer from 'multer';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from './src/data/products';
+import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from './server/models';
 import { 
   CartItem, 
   Product, 
@@ -164,8 +165,6 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // =========================================================================
 // SERVER STARTUP & API ROUTING
-// =========================================================================
-
 async function startServer() {
   const app = express();
   const httpServer = createServer(app);
@@ -206,19 +205,226 @@ async function startServer() {
     });
   });
 
+  // Initialize MongoDB Atlas connection
+  await connectDB();
+
   // -------------------------------------------------------------
   // 1. HEALTH & METRICS
   // -------------------------------------------------------------
-  app.get('/api/health', (req: Request, res: Response) => {
+  app.get('/api/health', async (req: Request, res: Response) => {
+    let mongoConnected = false;
+    try {
+      const mongoose = (await import('mongoose')).default;
+      mongoConnected = mongoose.connection.readyState === 1;
+    } catch (_) {}
+
     res.json({ 
       status: 'ok', 
-      service: 'TM Pick n Pay Express Cross-Border Engine', 
+      service: 'PnP Express Cross-Border Engine', 
       version: '2.4.0',
+      database: mongoConnected ? 'MongoDB Atlas Connected' : 'In-Memory Fallback',
       activeSockets: io.engine.clientsCount,
       cartItemCount: currentCart.length,
       ordersCount: ordersStore.length,
       timestamp: new Date().toISOString() 
     });
+  });
+
+  // -------------------------------------------------------------
+  // 1B. AUTHENTICATION & USER SESSIONS (MongoDB Atlas)
+  // -------------------------------------------------------------
+  app.post('/api/auth/signup', async (req: Request, res: Response) => {
+    try {
+      const { email, name, password, phone, country } = req.body;
+      if (!email || !name) {
+        return res.status(400).json({ error: 'Email and name are required' });
+      }
+
+      let existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ error: 'User with this email already exists' });
+      }
+
+      // Generate CDP Smart Wallet Address placeholder or user wallet
+      const walletAddress = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+
+      const newUser = new User({
+        email,
+        name,
+        password: password || 'demo_pass_123',
+        role: 'Sponsor / Diaspora',
+        walletAddress,
+        cdpProjectId: process.env.VITE_CDP_PROJECT_ID,
+        phone: phone || '+44 7700 900123',
+        country: country || 'United Kingdom',
+        city: 'London',
+        walletBalanceUSD: 250.00
+      });
+
+      await newUser.save();
+
+      // Record Activity Log Session in MongoDB
+      await ActivityLog.create({
+        userId: newUser._id.toString(),
+        userEmail: newUser.email,
+        action: 'SIGNUP_SUCCESS',
+        details: { cdpProjectId: process.env.VITE_CDP_PROJECT_ID, walletAddress },
+        ip: req.ip
+      });
+
+      // Record CDP Wallet in MongoDB
+      await CDPWallet.create({
+        userId: newUser._id.toString(),
+        userEmail: newUser.email,
+        address: walletAddress,
+        projectId: process.env.VITE_CDP_PROJECT_ID,
+        balanceEth: 0.05,
+        balanceUsdc: 500.00
+      });
+
+      res.status(201).json({
+        success: true,
+        user: newUser,
+        token: `jwt_token_${newUser._id}`,
+        cdpWallet: {
+          address: walletAddress,
+          projectId: process.env.VITE_CDP_PROJECT_ID,
+          paymasterUrl: process.env.CDP_PAYMASTER_URL_TESTNET
+        }
+      });
+    } catch (err: any) {
+      console.error('[Auth Signup Error]:', err);
+      res.status(500).json({ error: err.message || 'Failed to sign up' });
+    }
+  });
+
+  app.post('/api/auth/login', async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+
+      let user = await User.findOne({ email });
+      if (!user) {
+        // Auto-provision demo account if not existing for smooth UX
+        const walletAddress = '0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18';
+        user = await User.create({
+          email,
+          name: email.split('@')[0].replace('.', ' '),
+          role: 'Sponsor / Diaspora',
+          walletAddress,
+          cdpProjectId: process.env.VITE_CDP_PROJECT_ID
+        });
+      } else {
+        user.lastLoginAt = new Date();
+        await user.save();
+      }
+
+      // Record Session Activity in MongoDB
+      await ActivityLog.create({
+        userId: user._id.toString(),
+        userEmail: user.email,
+        action: 'LOGIN_SUCCESS',
+        details: { cdpProjectId: process.env.VITE_CDP_PROJECT_ID },
+        ip: req.ip
+      });
+
+      let cdpWallet = await CDPWallet.findOne({ userId: user._id.toString() });
+      if (!cdpWallet) {
+        cdpWallet = await CDPWallet.create({
+          userId: user._id.toString(),
+          userEmail: user.email,
+          address: user.walletAddress || '0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18',
+          projectId: process.env.VITE_CDP_PROJECT_ID
+        });
+      }
+
+      res.json({
+        success: true,
+        user,
+        token: `jwt_token_${user._id}`,
+        cdpWallet
+      });
+    } catch (err: any) {
+      console.error('[Auth Login Error]:', err);
+      res.status(500).json({ error: err.message || 'Failed to log in' });
+    }
+  });
+
+  app.get('/api/auth/me', async (req: Request, res: Response) => {
+    try {
+      const user = await User.findOne().sort({ lastLoginAt: -1 });
+      if (!user) {
+        return res.json({ authenticated: false });
+      }
+      const cdpWallet = await CDPWallet.findOne({ userId: user._id.toString() });
+      res.json({
+        authenticated: true,
+        user,
+        cdpWallet
+      });
+    } catch (err) {
+      res.json({ authenticated: false });
+    }
+  });
+
+  app.get('/api/auth/sessions', async (req: Request, res: Response) => {
+    try {
+      const logs = await ActivityLog.find().sort({ timestamp: -1 }).limit(50);
+      res.json({ success: true, count: logs.length, sessions: logs });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // -------------------------------------------------------------
+  // 1C. COINBASE DEVELOPER PLATFORM (CDP) WALLET & PAYMASTER API
+  // -------------------------------------------------------------
+  app.get('/api/cdp/info', (req: Request, res: Response) => {
+    res.json({
+      success: true,
+      projectId: process.env.VITE_CDP_PROJECT_ID,
+      keyId: process.env.CDP_API_KEY_ID ? `${process.env.CDP_API_KEY_ID.substring(0, 6)}...` : 'configured',
+      paymasterTestnet: process.env.CDP_PAYMASTER_URL_TESTNET,
+      paymasterMainnet: process.env.CDP_PAYMASTER_URL_MAINNET,
+      network: 'Base Sepolia (Layer 2 Gasless)'
+    });
+  });
+
+  app.post('/api/cdp/wallet/create', async (req: Request, res: Response) => {
+    try {
+      const { userEmail = 'diaspora@pnpexpress.co.zw' } = req.body;
+      const newAddress = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+
+      let user = await User.findOne({ email: userEmail });
+      const userId = user ? user._id.toString() : `usr_${Date.now()}`;
+
+      const wallet = await CDPWallet.create({
+        userId,
+        userEmail,
+        address: newAddress,
+        projectId: process.env.VITE_CDP_PROJECT_ID,
+        paymasterUrl: process.env.CDP_PAYMASTER_URL_TESTNET,
+        balanceEth: 0.05,
+        balanceUsdc: 500.00
+      });
+
+      await ActivityLog.create({
+        userId,
+        userEmail,
+        action: 'CDP_WALLET_CREATED',
+        details: { address: newAddress, projectId: process.env.VITE_CDP_PROJECT_ID }
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Coinbase CDP Smart Wallet provisioned successfully',
+        wallet
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // -------------------------------------------------------------
@@ -1021,6 +1227,46 @@ async function startServer() {
         };
 
         ordersStore.unshift(newPastOrder);
+
+        // MongoDB Atlas Async Sync
+        try {
+          await OrderModel.create({
+            orderId: newPastOrder.id,
+            invoiceNumber: newPastOrder.invoiceNumber,
+            date: newPastOrder.date,
+            timestamp: newPastOrder.timestamp,
+            status: newPastOrder.status,
+            statusLabel: newPastOrder.statusLabel,
+            statusColor: newPastOrder.statusColor,
+            storePartner: newPastOrder.storePartner,
+            fulfillmentType: newPastOrder.fulfillmentType,
+            fulfillmentLocation: newPastOrder.fulfillmentLocation,
+            recipientName: newPastOrder.recipientName,
+            recipientPhone: newPastOrder.recipientPhone,
+            paymentMethod: newPastOrder.paymentMethod,
+            subtotalUSD: newPastOrder.subtotalUSD,
+            deliveryFeeUSD: newPastOrder.deliveryFeeUSD,
+            vatTaxUSD: newPastOrder.vatTaxUSD,
+            totalUSD: newPastOrder.totalUSD,
+            items: newPastOrder.items,
+            trackingSteps: newPastOrder.trackingSteps
+          });
+
+          await ActivityLog.create({
+            userId: payerMemberId || 'mem-1',
+            userEmail: 'tariro.moyo@gmail.com',
+            action: 'ORDER_PLACED_AND_SETTLED',
+            details: {
+              orderId,
+              invoiceNumber,
+              settledRail,
+              totalUSD: newPastOrder.totalUSD,
+              cdpProjectId: process.env.VITE_CDP_PROJECT_ID
+            }
+          });
+        } catch (dbErr) {
+          console.error('[MongoDB Order Save Error]:', dbErr);
+        }
 
         // 2. Create Commercial Tax Invoice Record
         const newInvoice: CommercialInvoice = {
