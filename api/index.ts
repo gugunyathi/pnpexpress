@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from '../src/data/products';
-import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from '../server/models';
-import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from '../server/coinbaseCheckout';
+import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from '../src/data/products.ts';
+import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from '../server/models.ts';
+import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from '../server/coinbaseCheckout.ts';
 
 // Shared In-Memory Demo Cart for Vercel Serverless Session
 const DEMO_CART = [
