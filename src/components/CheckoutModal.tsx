@@ -217,7 +217,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }
 
       if (data.mode === 'HOSTED_REDIRECT' && data.url) {
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
+        return;
       }
 
       setOrchestrationResult(data);
