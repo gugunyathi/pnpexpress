@@ -449,10 +449,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <option value="Australia">🇦🇺 Australia (Pesapal Australasia Rail)</option>
                   <option value="New Zealand">🇳🇿 New Zealand (Pesapal Australasia Rail)</option>
                   <option value="South Africa">🇿🇦 South Africa (Pesapal / SADC Rail)</option>
-                  <option value="Canada">🇨🇦 Canada (ContiPay / Coinbase USDC)</option>
+                  <option value="South Africa">🇿🇦 South Africa (TM Pick n Pay Direct ZAR)</option>
                 </select>
                 <Globe2 className="w-4 h-4 text-stone-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
+              <p className="text-[11px] text-stone-500 mt-1.5 leading-tight flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                <span><strong>Fast-Pass for existing Coinbase users:</strong> If you already have a Coinbase account, login/Passkey biometrics automatically auto-fills saved cards & limits for instant checkout settlement to merchant wallet on Base.</span>
+              </p>
             </div>
 
             {/* Security Guarantee & Multi-Rail SLA Box */}
