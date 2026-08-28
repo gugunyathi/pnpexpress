@@ -43,18 +43,20 @@ const DEMO_CART = [
 ];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Extract path from URL (e.g., /api/health -> /health)
-  const url = req.url || '';
-  const pathname = url.split('?')[0].replace(/^\/api/, '');
+  try {
+    // Extract path from URL (e.g., /api/health -> /health)
+    const rawUrl = req.url || '';
+    const cleanUrl = rawUrl.split('?')[0];
+    const pathname = cleanUrl.startsWith('/api') ? cleanUrl.replace(/^\/api/, '') : cleanUrl;
 
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
 
   // --- 1. HEALTH ---
   if (pathname === '/health' || pathname === '') {
@@ -305,7 +307,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { amount, currency = 'USD', orderId, customerEmail, country, card } = req.body || {};
     const totalAmount = amount ? parseFloat(amount) : DEMO_CART.reduce((sum, item) => sum + item.product.priceUSD * item.quantity, 0);
     const targetOrderId = orderId || `PNP-ZW-${Math.floor(100000 + Math.random() * 900000)}`;
-    const targetCountry = country || (card?.billingCountry) || 'US';
+    const targetCountry = country || (card?.billingCountry) || 'GB';
 
     const checkoutResult = await createCoinbaseCheckout({
       amount: totalAmount,
@@ -316,7 +318,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       card
     });
 
-    return res.status(200).json(checkoutResult);
+    const voucherCode = `VOUCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const invoiceNumber = `INV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    return res.status(200).json({
+      ...checkoutResult,
+      orderId: targetOrderId,
+      invoiceNumber,
+      voucherCode,
+      totalUSD: Number(totalAmount.toFixed(2)),
+      finalRail: 'COINBASE_USDC',
+      settlementAccount: 'Merchant Wallet Base (USDC)',
+      attempts: [
+        { rail: 'COINBASE_USDC', latencyMs: 120, status: 'SUCCESS' }
+      ]
+    });
   }
 
   if ((pathname === '/webhooks/coinbase' || pathname === '/webhooks/onramp' || pathname === '/api/webhooks/onramp') && req.method === 'POST') {
@@ -519,4 +535,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Fallback 404 for unhandled API routes
   return res.status(404).json({ error: `API route not found: ${pathname}` });
+  } catch (err: any) {
+    console.error('[Vercel API Handler Exception]:', err);
+    return res.status(500).json({
+      error: err.message || 'Internal Server Error',
+      success: false
+    });
+  }
 }
