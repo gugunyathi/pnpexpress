@@ -18,36 +18,52 @@ export function verifyWebhookSignature(
 ): boolean {
   if (!signatureHeader || !secret) return false;
   try {
+    // 1. Check for standard simple HMAC-SHA256 hex signature header
+    const directExpected = crypto.createHmac('sha256', secret).update(rawPayload, 'utf8').digest('hex');
+    if (signatureHeader === directExpected) return true;
+
+    // Direct buffer comparison for raw hex header
+    if (/^[0-9a-fA-F]{64}$/.test(signatureHeader.trim())) {
+      const directBuf = Buffer.from(signatureHeader.trim(), 'hex');
+      const expectedBuf = Buffer.from(directExpected, 'hex');
+      if (directBuf.length === expectedBuf.length && crypto.timingSafeEqual(directBuf, expectedBuf)) {
+        return true;
+      }
+    }
+
+    // 2. Check for timestamped structured signature header (t=...,h=...,v1=...)
     const elements = signatureHeader.split(',');
     const timestampElem = elements.find(e => e.startsWith('t='));
     const headerNamesElem = elements.find(e => e.startsWith('h='));
     const signatureElem = elements.find(e => e.startsWith('v1='));
 
-    if (!timestampElem || !headerNamesElem || !signatureElem) return false;
+    if (timestampElem && headerNamesElem && signatureElem) {
+      const timestamp = timestampElem.split('=')[1];
+      const headerNames = headerNamesElem.split('=')[1];
+      const providedSignature = signatureElem.split('=')[1];
 
-    const timestamp = timestampElem.split('=')[1];
-    const headerNames = headerNamesElem.split('=')[1];
-    const providedSignature = signatureElem.split('=')[1];
+      const headerValues = headerNames
+        .split(' ')
+        .map(n => {
+          const val = headers[n] || headers[n.toLowerCase()];
+          return Array.isArray(val) ? val.join(',') : val || '';
+        })
+        .join('.');
 
-    const headerValues = headerNames
-      .split(' ')
-      .map(n => {
-        const val = headers[n] || headers[n.toLowerCase()];
-        return Array.isArray(val) ? val.join(',') : val || '';
-      })
-      .join('.');
+      const signedPayload = `${timestamp}.${headerNames}.${headerValues}.${rawPayload}`;
+      const expected = crypto.createHmac('sha256', secret).update(signedPayload, 'utf8').digest('hex');
 
-    const signedPayload = `${timestamp}.${headerNames}.${headerValues}.${rawPayload}`;
-    const expected = crypto.createHmac('sha256', secret).update(signedPayload, 'utf8').digest('hex');
+      const expectedBuf = Buffer.from(expected, 'hex');
+      const providedBuf = Buffer.from(providedSignature, 'hex');
 
-    const expectedBuf = Buffer.from(expected, 'hex');
-    const providedBuf = Buffer.from(providedSignature, 'hex');
+      if (expectedBuf.length === providedBuf.length) {
+        const match = crypto.timingSafeEqual(expectedBuf, providedBuf);
+        const ageMinutes = (Date.now() - parseInt(timestamp, 10) * 1000) / 60000;
+        if (match && ageMinutes <= maxAgeMinutes) return true;
+      }
+    }
 
-    if (expectedBuf.length !== providedBuf.length) return false;
-    const match = crypto.timingSafeEqual(expectedBuf, providedBuf);
-
-    const ageMinutes = (Date.now() - parseInt(timestamp, 10) * 1000) / 60000;
-    return match && ageMinutes <= maxAgeMinutes;
+    return false;
   } catch (err) {
     return false;
   }
