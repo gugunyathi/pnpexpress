@@ -58,6 +58,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).end();
     }
 
+    // Safely parse JSON body if string
+    let body = req.body;
+    if (typeof body === 'string' && body.length > 0) {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        body = {};
+      }
+    } else if (!body) {
+      body = {};
+    }
+
   // --- 1. HEALTH ---
   if (pathname === '/health' || pathname === '') {
     return res.status(200).json({
