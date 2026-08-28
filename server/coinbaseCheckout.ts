@@ -61,6 +61,7 @@ export async function createCoinbaseCheckout(payload: CheckoutRequestPayload) {
   const isWithinHeadlessLimit = amount <= 2500;
 
   const merchantWalletAddress = process.env.MERCHANT_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18';
+  const appUrl = process.env.APP_URL || 'https://pnpexpress.vercel.app';
 
   // Path A: Headless Onramp for U.S. users (Native embedded Web2 Card UI, $2.5K limit)
   if (isUS && isWithinHeadlessLimit) {
@@ -76,56 +77,100 @@ export async function createCoinbaseCheckout(payload: CheckoutRequestPayload) {
       merchantWalletAddress,
       network: 'Base Sepolia Testnet (Layer 2 Gasless)',
       message: `US Native Headless Card Onramp cleared gaslessly into merchant wallet (${merchantWalletAddress})`,
-      url: `https://pnpexpress.vercel.app/order/${orderId}/success`
+      url: `${appUrl}/order/${orderId}/success`
     };
   }
 
-  // Path B: Hosted Onramp for UK, EU, AU, NZ, & International users
+  // Path B: Coinbase Onramp Session Token & URL Generation for International Shoppers
   try {
     const cdpApiKey = process.env.CDP_API_KEY || process.env.CDP_API_KEY_ID || '';
-    const res = await fetch('https://api.coinbase.com/v1/checkouts', {
+    
+    // Step 1: Request Onramp Session Token from Coinbase API
+    const tokenRes = await fetch('https://api.developer.coinbase.com/onramp/v1/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${cdpApiKey}`,
-        'X-Idempotency-Key': crypto.randomUUID()
+        'Authorization': `Bearer ${cdpApiKey}`
       },
       body: JSON.stringify({
-        amount: amount.toString(),
-        currency: currency.toUpperCase(),
-        description: `PNP Express Order #${orderId}`,
-        successRedirectUrl: `https://pnpexpress.vercel.app/order/${orderId}/success`,
-        failRedirectUrl: `https://pnpexpress.vercel.app/order/${orderId}/failed`,
-        metadata: { orderId, customerEmail, country: normalizedCountry, merchantWalletAddress }
+        addresses: [{
+          address: merchantWalletAddress,
+          blockchains: ['base']
+        }],
+        clientIp: '127.0.0.1'
       })
     });
 
-    if (res.ok) {
-      const checkout = await res.json();
+    if (tokenRes.ok) {
+      const tokenData = await tokenRes.json();
+      const sessionToken = tokenData.token;
+      
+      // Step 2: Build Coinbase Onramp Hosted URL
+      const fiatCurr = (currency || 'GBP').toUpperCase();
+      const redirectUrl = `${appUrl}/order/${orderId}/complete`;
+      const onrampUrl = `https://pay.coinbase.com/buy/select-asset?sessionToken=${encodeURIComponent(sessionToken)}&defaultAsset=USDC&defaultNetwork=base&fiatCurrency=${fiatCurr}&partnerUserRef=${encodeURIComponent(orderId)}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+
       return {
         success: true,
         mode: 'HOSTED_REDIRECT',
-        url: checkout.url || `https://checkout.coinbase.com/pay/${checkout.id}`,
-        checkoutId: checkout.id,
+        url: onrampUrl,
+        sessionToken,
+        checkoutId: `chk_onramp_${orderId}`,
         orderId,
         merchantWalletAddress,
-        network: 'Base Sepolia Testnet'
+        network: 'base'
       };
+    } else {
+      // Fallback to Coinbase Checkouts API if onramp token endpoint returns error
+      const res = await fetch('https://api.coinbase.com/v1/checkouts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${cdpApiKey}`,
+          'X-Idempotency-Key': crypto.randomUUID()
+        },
+        body: JSON.stringify({
+          amount: amount.toString(),
+          currency: currency.toUpperCase(),
+          description: `PNP Express Order #${orderId}`,
+          successRedirectUrl: `${appUrl}/order/${orderId}/success`,
+          failRedirectUrl: `${appUrl}/order/${orderId}/failed`,
+          metadata: { orderId, customerEmail, country: normalizedCountry, merchantWalletAddress }
+        })
+      });
+
+      if (res.ok) {
+        const checkout = await res.json();
+        return {
+          success: true,
+          mode: 'HOSTED_REDIRECT',
+          url: checkout.url || `https://checkout.coinbase.com/pay/${checkout.id}`,
+          checkoutId: checkout.id,
+          orderId,
+          merchantWalletAddress,
+          network: 'base'
+        };
+      }
     }
   } catch (err) {
-    console.warn('[Coinbase Checkout API Call Warning]: Fallback session URL generated:', err);
+    console.warn('[Coinbase Onramp API Warning]: Fallback session URL generated:', err);
   }
 
-  // Robust Fallback Hosted Checkout Session URL
-  const fallbackCheckoutId = `chk_host_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  // Fallback Hosted Onramp / Checkout Session URL
+  const fallbackToken = `token_demo_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const fiatCurr = (currency || 'GBP').toUpperCase();
+  const redirectUrl = `${appUrl}/order/${orderId}/complete`;
+  const fallbackUrl = `https://pay.coinbase.com/buy/select-asset?sessionToken=${fallbackToken}&defaultAsset=USDC&defaultNetwork=base&fiatCurrency=${fiatCurr}&partnerUserRef=${encodeURIComponent(orderId)}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+
   return {
     success: true,
     mode: 'HOSTED_REDIRECT',
-    url: `https://checkout.coinbase.com/pay/${fallbackCheckoutId}`,
-    checkoutId: fallbackCheckoutId,
+    url: fallbackUrl,
+    sessionToken: fallbackToken,
+    checkoutId: `chk_host_${orderId}`,
     orderId,
     merchantWalletAddress,
-    network: 'Base Sepolia Testnet'
+    network: 'base'
   };
 }
 

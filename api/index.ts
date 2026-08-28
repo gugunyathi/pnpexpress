@@ -319,18 +319,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(checkoutResult);
   }
 
-  if (pathname === '/webhooks/coinbase' && req.method === 'POST') {
+  if ((pathname === '/webhooks/coinbase' || pathname === '/webhooks/onramp' || pathname === '/api/webhooks/onramp') && req.method === 'POST') {
     const rawPayload = JSON.stringify(req.body || {});
-    const signatureHeader = (req.headers['x-hook0-signature'] as string) || (req.headers['x-cc-webhook-signature'] as string);
+    const signatureHeader = (req.headers['x-hook0-signature'] as string) || (req.headers['x-cc-webhook-signature'] as string) || (req.headers['x-cb-signature'] as string);
     const secret = process.env.COINBASE_WEBHOOK_SECRET || 'sec_wh_cdp_pnpexpress_2026';
 
     const isValid = verifyWebhookSignature(rawPayload, signatureHeader, secret, req.headers as any);
     const event = req.body || {};
-    const eventType = event.type || event.event?.type;
+    const eventType = event.eventType || event.type || event.event?.type;
+    const status = event.status || event.data?.status;
     const metadata = event.data?.metadata || event.event?.data?.metadata || {};
-    const orderId = metadata.orderId || event.data?.id;
+    const orderId = event.partnerUserRef || metadata.orderId || event.data?.id;
 
-    if (eventType === 'checkout.payment.success' || eventType === 'charge:confirmed') {
+    if (
+      (eventType === 'onramp.transaction.success' && status === 'ONRAMP_TRANSACTION_STATUS_SUCCESS') ||
+      eventType === 'checkout.payment.success' ||
+      eventType === 'charge:confirmed'
+    ) {
       if (orderId) {
         await OrderModel.updateOne({ orderId }, { $set: { status: 'PROCESSING', statusLabel: 'Paid via Coinbase USDC' } }).catch(() => {});
       }

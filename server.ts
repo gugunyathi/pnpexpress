@@ -979,39 +979,44 @@ async function startServer() {
   app.post('/api/checkout', handleDualPathCheckout);
   app.post('/api/checkout/create', handleDualPathCheckout);
 
-  // Coinbase Webhook Handler: Verifies HMAC signature and processes payment events
-  app.post('/api/webhooks/coinbase', async (req: Request, res: Response) => {
+  // Coinbase Webhook Handler: Verifies HMAC signature and processes payment events (Onramp & Checkouts)
+  const handleCoinbaseWebhook = async (req: Request, res: Response) => {
     try {
       const rawPayload = JSON.stringify(req.body);
-      const signatureHeader = (req.headers['x-hook0-signature'] as string) || (req.headers['x-cc-webhook-signature'] as string);
+      const signatureHeader = (req.headers['x-hook0-signature'] as string) || (req.headers['x-cc-webhook-signature'] as string) || (req.headers['x-cb-signature'] as string);
       const secret = process.env.COINBASE_WEBHOOK_SECRET || 'sec_wh_cdp_pnpexpress_2026';
 
       const isValid = verifyWebhookSignature(rawPayload, signatureHeader, secret, req.headers as any);
 
-      const event = req.body;
-      const eventType = event.type || event.event?.type;
-      const metadata = event.data?.metadata || event.event?.data?.metadata || {};
-      const orderId = metadata.orderId || event.data?.id;
+      const event = req.body || {};
+      const eventType = event.eventType || event.type || event.event?.type;
+      const status = event.status || event.data?.status;
+      const orderId = event.partnerUserRef || event.data?.metadata?.orderId || event.event?.data?.metadata?.orderId || event.data?.id;
+      const txHash = event.txHash || event.data?.txHash;
 
-      if (eventType === 'checkout.payment.success' || eventType === 'charge:confirmed') {
+      if (
+        (eventType === 'onramp.transaction.success' && status === 'ONRAMP_TRANSACTION_STATUS_SUCCESS') ||
+        eventType === 'checkout.payment.success' ||
+        eventType === 'charge:confirmed'
+      ) {
         if (orderId) {
           const order = ordersStore.find(o => o.id === orderId);
           if (order) {
             order.status = 'PROCESSING';
-            order.statusLabel = 'Payment Confirmed via Coinbase CDP - Packaging at TM Pick n Pay Avondale';
+            order.statusLabel = 'Payment Confirmed via Coinbase USDC (Base) - Packaging at TM Pick n Pay Avondale';
             order.statusColor = 'emerald';
             order.trackingSteps[0].completed = true;
           }
-          await OrderModel.updateOne({ orderId }, { $set: { status: 'PROCESSING', statusLabel: 'Paid via Coinbase USDC' } }).catch(() => {});
+          await OrderModel.updateOne({ orderId }, { $set: { status: 'PROCESSING', statusLabel: 'Paid via Coinbase USDC', txHash } }).catch(() => {});
         }
 
         await ActivityLog.create({
-          userId: metadata.customerEmail || 'webhooks',
-          userEmail: metadata.customerEmail || 'webhooks@pnpexpress.co.zw',
+          userId: event.partnerUserRef || 'webhooks',
+          userEmail: 'webhooks@pnpexpress.co.zw',
           action: 'COINBASE_PAYMENT_SUCCESS_WEBHOOK',
-          details: { orderId, eventType }
+          details: { orderId, eventType, txHash, usdcAmount: event.purchaseAmount?.value }
         }).catch(() => {});
-      } else if (eventType === 'checkout.payment.failed' || eventType === 'checkout.payment.expired' || eventType === 'charge:failed') {
+      } else if (eventType === 'onramp.transaction.failed' || eventType === 'checkout.payment.failed' || eventType === 'charge:failed') {
         if (orderId) {
           await OrderModel.updateOne({ orderId }, { $set: { status: 'FAILED' } }).catch(() => {});
         }
@@ -1026,7 +1031,11 @@ async function startServer() {
       console.error('[Coinbase Webhook Handler Error]:', err);
       return res.status(200).send('OK');
     }
-  });
+  };
+
+  app.post('/api/webhooks/coinbase', handleCoinbaseWebhook);
+  app.post('/api/webhooks/onramp', handleCoinbaseWebhook);
+  app.post('/webhooks/onramp', handleCoinbaseWebhook);
 
   // Refund Route: Cancels / refunds order via Coinbase CDP API
   app.post(['/api/checkout/:id/refund', '/api/checkout/refund'], async (req: Request, res: Response) => {
