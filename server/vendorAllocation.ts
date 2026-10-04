@@ -1,8 +1,11 @@
 /**
- * Daily production batch allocation — e.g. the Mutoko bakery line. Street
- * vendors and tuck shops ordering via WhatsApp draw dynamically from a
- * fixed daily run instead of an unbounded catalogue quantity, so the 800th
- * loaf ordered today can't oversell a batch that only made 600.
+ * Daily production batch allocation. Street vendors and tuck shops ordering
+ * via WhatsApp draw dynamically from a fixed daily run instead of an
+ * unbounded catalogue quantity, so the 800th loaf ordered today can't
+ * oversell a batch that only made 600.
+ *
+ * Generalised beyond a single hardcoded SKU: any high-volume production
+ * line can be registered here, not just the Mutoko bakery line.
  */
 
 interface DailyBatch {
@@ -14,6 +17,15 @@ interface DailyBatch {
   productionDate: string;
 }
 
+// Registry of production lines and their daily output. Adding a new
+// high-volume item is a one-line addition here, not a code change to the
+// allocation logic itself.
+const PRODUCTION_LINES: Array<{ productId: string; label: string; dailyQty: number }> = [
+  { productId: 'bread-loaf', label: 'Mutoko Bakery Line — White Bread Loaf', dailyQty: 600 },
+  { productId: 'maize-meal-bulk', label: 'Harare Milling Line — Bulk Maize Meal (10kg)', dailyQty: 400 },
+  { productId: 'cooking-oil-bulk', label: 'Bulawayo Bottling Line — Bulk Cooking Oil (5L)', dailyQty: 250 },
+];
+
 const batches = new Map<string, DailyBatch>();
 
 function today(): string {
@@ -22,16 +34,18 @@ function today(): string {
 
 function seedTodaysBatches() {
   const date = today();
-  const seedKey = `bakery-bread-${date}`;
-  if (!batches.has(seedKey)) {
-    batches.set(seedKey, {
-      id: seedKey,
-      productId: 'bread-loaf',
-      label: 'Mutoko Bakery Line — White Bread Loaf',
-      producedQty: 600,
-      allocatedQty: 0,
-      productionDate: date,
-    });
+  for (const line of PRODUCTION_LINES) {
+    const seedKey = `${line.productId}-${date}`;
+    if (!batches.has(seedKey)) {
+      batches.set(seedKey, {
+        id: seedKey,
+        productId: line.productId,
+        label: line.label,
+        producedQty: line.dailyQty,
+        allocatedQty: 0,
+        productionDate: date,
+      });
+    }
   }
 }
 
@@ -43,6 +57,12 @@ export function getTodaysBatch(productId: string): DailyBatch | null {
   return null;
 }
 
+export function listTodaysBatches(): DailyBatch[] {
+  seedTodaysBatches();
+  const date = today();
+  return [...batches.values()].filter((b) => b.productionDate === date);
+}
+
 export interface AllocationResult {
   success: boolean;
   allocatedQty: number;
@@ -51,9 +71,11 @@ export interface AllocationResult {
 }
 
 /**
- * Allocates out of the current day's production run. Partial fills are
- * reported explicitly (allocatedQty may be less than requested) rather than
- * silently rounding down — the caller must relay that to the vendor.
+ * Allocates out of the current day's production run for the given
+ * productId. Partial fills are reported explicitly (allocatedQty may be
+ * less than requested) rather than silently rounding down — the caller
+ * must relay that to the vendor. Returns NO_BATCH_TODAY for any productId
+ * not registered in PRODUCTION_LINES above.
  */
 export function allocateFromBatch(productId: string, requestedQty: number): AllocationResult {
   seedTodaysBatches();

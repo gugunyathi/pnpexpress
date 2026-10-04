@@ -9,12 +9,13 @@ import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from './src/
 import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from './server/models';
 import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from './server/coinbaseCheckout';
 import { getWalletBalances, getVoucherBalances, walletCheckout, debitWallet, creditVoucherFromRemittance, getRemittanceLog } from './server/walletLedger';
-import { requestToPay, payout, simulateResolve, verifyEcoCashWebhookSignature } from './server/ecocash';
+import { requestToPay, payout, payForOrder, settleTransaction, verifyEcoCashWebhookSignature } from './server/ecocash';
 import { checkStock, findSubstitute, verifyAvailableAtCheckout } from './server/erpStock';
 import { parseBulkOrderText, parseBulkOrderTextWithAI } from './server/bulkOrderParser';
 import { listZones, routeFulfillment } from './server/deliveryZones';
 import { allocateFromBatch } from './server/vendorAllocation';
 import { findB2BAccount } from './server/b2bAccounts';
+import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from './server/pnpOrders';
 import { 
   CartItem, 
   Product, 
@@ -2275,7 +2276,9 @@ Return a JSON object with:
     const { phone, amount, currency = 'ZWG' } = req.body || {};
     if (!phone || !amount) return res.status(400).json({ error: 'phone and amount are required' });
     const txn = await requestToPay(phone, Number(amount), currency);
-    res.json({ success: true, transaction: txn, message: 'Request-to-pay sent to your EcoCash number. Approve the USSD prompt to complete funding (demo mode — auto-resolves).' });
+    // Demo-mode auto-resolve — see settleTransaction's own comment.
+    const settled = await settleTransaction(txn.id, 'SUCCESS');
+    res.json({ success: true, transaction: settled ?? txn, balances: getWalletBalances(phone), message: 'EcoCash request-to-pay approved and wallet credited (demo mode — auto-resolved).' });
   });
 
   app.post('/api/ecocash/offramp', async (req: Request, res: Response) => {
@@ -2284,10 +2287,21 @@ Return a JSON object with:
     if (!phone || !amount) return res.status(400).json({ error: 'phone and amount are required' });
     // Debit exactly the requested currency/amount — not a ZWG-first
     // FX-fallback order settlement (walletCheckout is for cart checkout).
+    // Debited as a HOLD before payout confirmation; settleTransaction
+    // refunds it if the gateway later reports FAILED.
     const debit = await debitWallet(phone, currency, Number(amount));
     if (!debit.success) return res.status(402).json({ success: false, reason: debit.reason, balances: debit.balances });
     const txn = await payout(phone, Number(amount), currency);
-    res.json({ success: true, transaction: txn, balances: debit.balances });
+    const settled = await settleTransaction(txn.id, 'SUCCESS');
+    res.json({ success: true, transaction: settled ?? txn, balances: debit.balances });
+  });
+
+  app.post('/api/ecocash/pay-now', async (req: Request, res: Response) => {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, amount, currency = 'ZWG', orderReference } = req.body || {};
+    if (!phone || !amount || !orderReference) return res.status(400).json({ error: 'phone, amount, orderReference are required' });
+    const txn = await payForOrder(phone, Number(amount), currency, orderReference);
+    res.json({ success: true, transaction: txn });
   });
 
   app.post('/api/ecocash/webhook', async (req: Request, res: Response) => {
@@ -2297,8 +2311,8 @@ Return a JSON object with:
       return res.status(401).json({ error: 'invalid signature' });
     }
     const { transactionId, outcome } = req.body || {};
-    const resolved = simulateResolve(transactionId, outcome === 'FAILED' ? 'FAILED' : 'SUCCESS');
-    if (!resolved) return res.status(404).json({ error: 'transaction not found' });
+    const resolved = await settleTransaction(transactionId, outcome === 'FAILED' ? 'FAILED' : 'SUCCESS');
+    if (!resolved) return res.status(404).json({ error: 'transaction not found, or already resolved' });
     res.json({ success: true, transaction: resolved });
   });
 
@@ -2367,6 +2381,42 @@ Return a JSON object with:
     const phone = req.query.phone as string;
     if (!phone) return res.status(400).json({ error: 'phone is required' });
     res.json({ success: true, account: findB2BAccount(phone) });
+  });
+
+  // -------------------------------------------------------------
+  // 23. TM-PICKNPAY: ORDER PERSISTENCE & PICKING QUEUES
+  // -------------------------------------------------------------
+  app.post('/api/orders/pnp/create', (req: Request, res: Response) => {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, items, totalZWG, address, route, storeId, hubName } = req.body || {};
+    if (!phone || !items?.length || !totalZWG || !address || !route) {
+      return res.status(400).json({ error: 'phone, items, totalZWG, address, route are required' });
+    }
+    const order = createOrder({ phone, items, totalZWG, address, route, storeId, hubName });
+    res.json({ success: true, order });
+  });
+
+  app.get('/api/orders/pnp/track', (req: Request, res: Response) => {
+    const orderId = req.query.orderId as string;
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+    const order = getOrder(orderId);
+    if (!order) return res.status(404).json({ error: 'order not found' });
+    res.json({ success: true, order });
+  });
+
+  app.post('/api/orders/pnp/advance', (req: Request, res: Response) => {
+    if (!requireSharedSecret(req, res)) return;
+    const { orderId } = req.body || {};
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+    const result = advanceOrder(orderId);
+    res.status(result.success ? 200 : 409).json(result);
+  });
+
+  app.get('/api/orders/pnp/queue', (req: Request, res: Response) => {
+    const storeId = req.query.storeId as string | undefined;
+    const hub = req.query.hub === 'true';
+    const queue = hub ? getHubQueue() : getStoreQueue(storeId ?? 'TM_PNP');
+    res.json({ success: true, queue });
   });
 
   // -------------------------------------------------------------

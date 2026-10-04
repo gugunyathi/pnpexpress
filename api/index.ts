@@ -3,12 +3,14 @@ import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from '../src
 import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from '../server/models.ts';
 import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from '../server/coinbaseCheckout.ts';
 import { getWalletBalances, getVoucherBalances, walletCheckout, debitWallet, creditVoucherFromRemittance, getRemittanceLog } from '../server/walletLedger.ts';
-import { requestToPay, payout, simulateResolve, verifyEcoCashWebhookSignature } from '../server/ecocash.ts';
+import { requestToPay, payout, payForOrder, settleTransaction, verifyEcoCashWebhookSignature } from '../server/ecocash.ts';
 import { checkStock, findSubstitute, verifyAvailableAtCheckout } from '../server/erpStock.ts';
 import { parseBulkOrderText, parseBulkOrderTextWithAI } from '../server/bulkOrderParser.ts';
 import { listZones, routeFulfillment } from '../server/deliveryZones.ts';
 import { allocateFromBatch } from '../server/vendorAllocation.ts';
 import { findB2BAccount } from '../server/b2bAccounts.ts';
+import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from '../server/pnpOrders.ts';
+import type { FulfillmentRoute } from '../src/types.ts';
 import type { RemittanceSource, VoucherCurrency, B2BAccountType } from '../src/types.ts';
 
 // Shared In-Memory Demo Cart for Vercel Serverless Session
@@ -641,7 +643,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { phone, amount, currency = 'ZWG' } = req.body || {};
     if (!phone || !amount) return res.status(400).json({ error: 'phone and amount are required' });
     const txn = await requestToPay(phone, Number(amount), currency);
-    return res.status(200).json({ success: true, transaction: txn, message: 'Request-to-pay sent to your EcoCash number. Approve the USSD prompt to complete funding (demo mode — auto-resolves).' });
+    // Demo-mode auto-resolve: no real EcoCash gateway exists to send a
+    // webhook, so this stands in for one — settleTransaction is what
+    // actually credits the wallet (requestToPay itself never touches the
+    // ledger). See settleTransaction's own comment for why calling the real
+    // /ecocash/webhook later for the same transaction is still safe.
+    const settled = await settleTransaction(txn.id, 'SUCCESS');
+    const balances = getWalletBalances(phone);
+    return res.status(200).json({ success: true, transaction: settled ?? txn, balances, message: 'EcoCash request-to-pay approved and wallet credited (demo mode — auto-resolved).' });
   }
 
   if (pathname === '/ecocash/offramp' && req.method === 'POST') {
@@ -652,10 +661,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // balance — and debits exactly the requested currency/amount, not a
     // ZWG-first FX-fallback settlement (that's walletCheckout's job, for
     // order checkout, not for a user-specified cash-out amount/currency).
+    // Debited here as a HOLD, before the payout is confirmed — settleTransaction
+    // refunds this if the (demo or real) gateway later reports FAILED.
     const debit = await debitWallet(phone, currency, Number(amount));
     if (!debit.success) return res.status(402).json({ success: false, reason: debit.reason, balances: debit.balances });
     const txn = await payout(phone, Number(amount), currency);
-    return res.status(200).json({ success: true, transaction: txn, balances: debit.balances });
+    const settled = await settleTransaction(txn.id, 'SUCCESS');
+    return res.status(200).json({ success: true, transaction: settled ?? txn, balances: debit.balances });
+  }
+
+  if (pathname === '/ecocash/pay-now' && req.method === 'POST') {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, amount, currency = 'ZWG', orderReference } = req.body || {};
+    if (!phone || !amount || !orderReference) return res.status(400).json({ error: 'phone, amount, orderReference are required' });
+    const txn = await payForOrder(phone, Number(amount), currency, orderReference);
+    return res.status(200).json({ success: true, transaction: txn });
   }
 
   if (pathname === '/ecocash/webhook' && req.method === 'POST') {
@@ -665,8 +685,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'invalid signature' });
     }
     const { transactionId, outcome } = req.body || {};
-    const resolved = simulateResolve(transactionId, outcome === 'FAILED' ? 'FAILED' : 'SUCCESS');
-    if (!resolved) return res.status(404).json({ error: 'transaction not found' });
+    const resolved = await settleTransaction(transactionId, outcome === 'FAILED' ? 'FAILED' : 'SUCCESS');
+    if (!resolved) return res.status(404).json({ error: 'transaction not found, or already resolved' });
     return res.status(200).json({ success: true, transaction: resolved });
   }
 
@@ -730,6 +750,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!phone) return res.status(400).json({ error: 'phone is required' });
     const account = findB2BAccount(phone);
     return res.status(200).json({ success: true, account });
+  }
+
+  // --- 20. TM-PICKNPAY: ORDER PERSISTENCE & PICKING QUEUES ---
+  if (pathname === '/orders/pnp/create' && req.method === 'POST') {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, items, totalZWG, address, route, storeId, hubName } = (req.body || {}) as {
+      phone?: string; items?: Array<{ productId: string; name: string; qty: number; priceZWG: number }>;
+      totalZWG?: number; address?: string; route?: FulfillmentRoute; storeId?: string; hubName?: string;
+    };
+    if (!phone || !items?.length || !totalZWG || !address || !route) {
+      return res.status(400).json({ error: 'phone, items, totalZWG, address, route are required' });
+    }
+    const order = createOrder({ phone, items, totalZWG, address, route, storeId, hubName });
+    return res.status(200).json({ success: true, order });
+  }
+
+  if (pathname === '/orders/pnp/track') {
+    const orderId = req.query?.orderId as string;
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+    const order = getOrder(orderId);
+    if (!order) return res.status(404).json({ error: 'order not found' });
+    return res.status(200).json({ success: true, order });
+  }
+
+  if (pathname === '/orders/pnp/advance' && req.method === 'POST') {
+    if (!requireSharedSecret(req, res)) return;
+    const { orderId } = req.body || {};
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+    const result = advanceOrder(orderId);
+    return res.status(result.success ? 200 : 409).json(result);
+  }
+
+  if (pathname === '/orders/pnp/queue') {
+    const storeId = req.query?.storeId as string | undefined;
+    const hub = req.query?.hub === 'true';
+    const queue = hub ? getHubQueue() : getStoreQueue(storeId ?? 'TM_PNP');
+    return res.status(200).json({ success: true, queue });
   }
 
   // Fallback 404 for unhandled API routes

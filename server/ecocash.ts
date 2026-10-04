@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import type { EcoCashTransaction, VoucherCurrency } from '../src/types';
+import { creditWallet } from './walletLedger';
 
 /**
  * EcoCash integration — DEMO MODE. No real EcoCash merchant/API credentials
@@ -65,10 +66,17 @@ export async function payout(phone: string, amount: number, currency: VoucherCur
   return txn;
 }
 
-/** Demo-mode resolver — simulates the async webhook that a real gateway would send. */
+/**
+ * Demo-mode resolver — simulates the async webhook that a real gateway
+ * would send. Only transitions a transaction OUT of PENDING once — calling
+ * this again on an already-resolved transaction is a no-op (returns null),
+ * which is what makes it safe to call both synchronously (demo auto-resolve
+ * at request time) and from the separate /ecocash/webhook endpoint without
+ * double-crediting or double-refunding the wallet.
+ */
 export function simulateResolve(txnId: string, outcome: 'SUCCESS' | 'FAILED' = 'SUCCESS'): EcoCashTransaction | null {
   const txn = transactions.get(txnId);
-  if (!txn) return null;
+  if (!txn || txn.status !== 'PENDING') return null;
   txn.status = outcome;
   return { ...txn };
 }
@@ -76,4 +84,58 @@ export function simulateResolve(txnId: string, outcome: 'SUCCESS' | 'FAILED' = '
 export function getTransaction(txnId: string): EcoCashTransaction | null {
   const t = transactions.get(txnId);
   return t ? { ...t } : null;
+}
+
+/**
+ * Direct order payment — EcoCash charges the customer for one order's
+ * total right now, at checkout. Deliberately separate from requestToPay/
+ * payout: those two move the WALLET ledger (top-up / cash-out); this one
+ * settles a specific order and must never touch the wallet at all — so it
+ * resolves via simulateResolve directly rather than settleTransaction
+ * (whose ONRAMP+SUCCESS branch exists specifically to credit the wallet,
+ * which would be wrong here — crediting the wallet for money that's about
+ * to be spent on this exact order, not saved for later, served no purpose
+ * and would have looked like free money on the next balance check).
+ */
+export async function payForOrder(phone: string, amount: number, currency: VoucherCurrency, orderReference: string): Promise<EcoCashTransaction> {
+  const txn: EcoCashTransaction = {
+    id: `ecc_${Date.now()}`,
+    direction: 'ONRAMP',
+    phone,
+    amount,
+    currency,
+    status: 'PENDING',
+    reference: orderReference,
+    createdAt: new Date().toISOString(),
+  };
+  transactions.set(txn.id, txn);
+  const resolved = simulateResolve(txn.id, 'SUCCESS');
+  return resolved ?? txn;
+}
+
+/**
+ * Single source of truth for applying ledger effects when a transaction
+ * resolves — called both by the demo-mode auto-resolve (synchronously, at
+ * request time, standing in for a gateway callback with no real gateway to
+ * wait on) and by the real /ecocash/webhook endpoint. simulateResolve's own
+ * PENDING-only guard makes calling this twice for the same transaction safe:
+ * the second call is a no-op, so demo auto-resolve + a later real webhook
+ * call can never double-credit or double-refund.
+ *
+ * - ONRAMP + SUCCESS  → credit the wallet (never credited at request time)
+ * - OFFRAMP + FAILED  → refund the wallet (it was debited as a hold at
+ *   request time, to prevent double-spend while the payout was pending)
+ * - ONRAMP + FAILED, OFFRAMP + SUCCESS → no ledger action needed
+ */
+export async function settleTransaction(txnId: string, outcome: 'SUCCESS' | 'FAILED'): Promise<EcoCashTransaction | null> {
+  const resolved = simulateResolve(txnId, outcome);
+  if (!resolved) return null;
+
+  if (resolved.direction === 'ONRAMP' && outcome === 'SUCCESS') {
+    await creditWallet(resolved.phone, resolved.currency, resolved.amount);
+  } else if (resolved.direction === 'OFFRAMP' && outcome === 'FAILED') {
+    await creditWallet(resolved.phone, resolved.currency, resolved.amount);
+  }
+
+  return resolved;
 }
