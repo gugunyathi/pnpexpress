@@ -1,9 +1,13 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://gugu_db_user:vP3zMxkL06t6SJCO@cluster0.stao0rj.mongodb.net/pnpexpress?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 export async function connectDB() {
   if (mongoose.connection.readyState >= 1) return;
+  if (!MONGODB_URI) {
+    console.error('[MongoDB] MONGODB_URI not set — skipping connection');
+    return;
+  }
   try {
     await mongoose.connect(MONGODB_URI, {
       dbName: 'pnpexpress'

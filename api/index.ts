@@ -2,6 +2,14 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from '../src/data/products.ts';
 import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from '../server/models.ts';
 import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from '../server/coinbaseCheckout.ts';
+import { getWalletBalances, getVoucherBalances, walletCheckout, debitWallet, creditVoucherFromRemittance, getRemittanceLog } from '../server/walletLedger.ts';
+import { requestToPay, payout, simulateResolve, verifyEcoCashWebhookSignature } from '../server/ecocash.ts';
+import { checkStock, findSubstitute, verifyAvailableAtCheckout } from '../server/erpStock.ts';
+import { parseBulkOrderText, parseBulkOrderTextWithAI } from '../server/bulkOrderParser.ts';
+import { listZones, routeFulfillment } from '../server/deliveryZones.ts';
+import { allocateFromBatch } from '../server/vendorAllocation.ts';
+import { findB2BAccount } from '../server/b2bAccounts.ts';
+import type { RemittanceSource, VoucherCurrency, B2BAccountType } from '../src/types.ts';
 
 // Shared In-Memory Demo Cart for Vercel Serverless Session
 const DEMO_CART = [
@@ -41,6 +49,24 @@ const DEMO_CART = [
     note: 'For Gogo power outages',
   },
 ];
+
+// Server-to-server guard for endpoints that move wallet/voucher balances.
+// Mirrors signal-desk-v4's CivicRewards magic-link shared-secret pattern —
+// this demo's API is on a public URL, so money-mutating routes shouldn't be
+// callable by anyone who finds it, even in demo mode.
+function requireSharedSecret(req: VercelRequest, res: VercelResponse): boolean {
+  const expected = process.env.MOJA_PNP_SHARED_SECRET;
+  if (!expected) {
+    res.status(503).json({ error: 'MOJA_PNP_SHARED_SECRET not configured on server' });
+    return false;
+  }
+  const provided = req.headers['x-moja-shared-secret'];
+  if (provided !== expected) {
+    res.status(401).json({ error: 'unauthorized' });
+    return false;
+  }
+  return true;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -86,6 +112,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       products: SAMPLE_PRODUCTS,
       exchangeRates: INITIAL_EXCHANGE_RATES,
     });
+  }
+
+  // Matches server.ts's existing shape exactly (that route pre-dates this
+  // change; api/index.ts — the Vercel serverless entry — was simply missing
+  // it, a gap unrelated to this feature but worth closing while touching
+  // this file, rather than inventing a second shape for the same path).
+  if (pathname === '/products/categories') {
+    const categoryCounts: Record<string, number> = {};
+    SAMPLE_PRODUCTS.forEach((p) => {
+      categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
+    });
+    const nativeLabels: Record<string, string> = {
+      'Maize & Staples': 'Hupfu, Mupunga & Shuga',
+      'Cooking & Oils': 'Mafuta eKubikisa',
+      'Meats & Proteins': 'Nyama yeMombe neHuku',
+      'Dairy & Fresh': 'Mukaka neMiriwo',
+      'Beverages & Tea': 'Mazoe, Tii neZvinwiwa',
+      'Solar & Power': 'Mwenje weZuva & Amagetsi',
+      'Household & Soap': 'Sipo neZvokuchenesa',
+      'Baby & Care': 'ZveVana neVacheche',
+    };
+    const categoryList = Object.entries(categoryCounts).map(([name, count]) => ({
+      name,
+      nativeLabel: nativeLabels[name] ?? name,
+      count,
+    }));
+    return res.status(200).json(categoryList);
   }
 
   // --- 3. MEMBERS ---
@@ -350,7 +403,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if ((pathname === '/webhooks/coinbase' || pathname === '/webhooks/onramp' || pathname === '/api/webhooks/onramp') && req.method === 'POST') {
     const rawPayload = JSON.stringify(req.body || {});
     const signatureHeader = (req.headers['x-hook0-signature'] as string) || (req.headers['x-cc-webhook-signature'] as string) || (req.headers['x-cb-signature'] as string);
-    const secret = process.env.COINBASE_WEBHOOK_SECRET || 'sec_wh_cdp_pnpexpress_2026';
+    const secret = process.env.COINBASE_WEBHOOK_SECRET || '';
 
     const isValid = verifyWebhookSignature(rawPayload, signatureHeader, secret, req.headers as any);
     const event = req.body || {};
@@ -543,6 +596,140 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       amountUSD: Number(amountUSD),
       cdpActive: false,
     });
+  }
+
+  // --- 13. TM-PICKNPAY: WALLET (multi-currency, open) ---
+  if (pathname === '/wallet/balances') {
+    const phone = (req.query?.phone as string) || 'demo';
+    return res.status(200).json({ success: true, phone, balances: getWalletBalances(phone) });
+  }
+
+  if (pathname === '/wallet/checkout' && req.method === 'POST') {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, totalZWG } = req.body || {};
+    if (!phone || !totalZWG) return res.status(400).json({ error: 'phone and totalZWG are required' });
+    const result = await walletCheckout(phone, Number(totalZWG));
+    return res.status(result.success ? 200 : 402).json(result);
+  }
+
+  // --- 14. TM-PICKNPAY: VOUCHER (closed-loop, remittance-fed only) ---
+  if (pathname === '/voucher/balance') {
+    const phone = (req.query?.phone as string) || 'demo';
+    return res.status(200).json({ success: true, phone, balances: getVoucherBalances(phone) });
+  }
+
+  if (pathname === '/remittance/webhook' && req.method === 'POST') {
+    if (!requireSharedSecret(req, res)) return;
+    const { source, recipientPhone, amount, currency, reference } = (req.body || {}) as {
+      source?: RemittanceSource; recipientPhone?: string; amount?: number; currency?: VoucherCurrency; reference?: string;
+    };
+    if (!source || !recipientPhone || !amount || !currency || !reference) {
+      return res.status(400).json({ error: 'source, recipientPhone, amount, currency, reference are required' });
+    }
+    const balances = await creditVoucherFromRemittance(recipientPhone, source, Number(amount), currency, reference);
+    return res.status(200).json({ success: true, balances });
+  }
+
+  if (pathname === '/remittance/log') {
+    const phone = req.query?.phone as string | undefined;
+    return res.status(200).json({ success: true, log: getRemittanceLog(phone) });
+  }
+
+  // --- 15. TM-PICKNPAY: ECOCASH ON/OFF-RAMP ---
+  if (pathname === '/ecocash/onramp' && req.method === 'POST') {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, amount, currency = 'ZWG' } = req.body || {};
+    if (!phone || !amount) return res.status(400).json({ error: 'phone and amount are required' });
+    const txn = await requestToPay(phone, Number(amount), currency);
+    return res.status(200).json({ success: true, transaction: txn, message: 'Request-to-pay sent to your EcoCash number. Approve the USSD prompt to complete funding (demo mode — auto-resolves).' });
+  }
+
+  if (pathname === '/ecocash/offramp' && req.method === 'POST') {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, amount, currency = 'ZWG' } = req.body || {};
+    if (!phone || !amount) return res.status(400).json({ error: 'phone and amount are required' });
+    // Off-ramp always debits the open WALLET, never the closed-loop voucher
+    // balance — and debits exactly the requested currency/amount, not a
+    // ZWG-first FX-fallback settlement (that's walletCheckout's job, for
+    // order checkout, not for a user-specified cash-out amount/currency).
+    const debit = await debitWallet(phone, currency, Number(amount));
+    if (!debit.success) return res.status(402).json({ success: false, reason: debit.reason, balances: debit.balances });
+    const txn = await payout(phone, Number(amount), currency);
+    return res.status(200).json({ success: true, transaction: txn, balances: debit.balances });
+  }
+
+  if (pathname === '/ecocash/webhook' && req.method === 'POST') {
+    const rawPayload = JSON.stringify(req.body || {});
+    const signatureHeader = req.headers['x-ecocash-signature'] as string | undefined;
+    if (!verifyEcoCashWebhookSignature(rawPayload, signatureHeader)) {
+      return res.status(401).json({ error: 'invalid signature' });
+    }
+    const { transactionId, outcome } = req.body || {};
+    const resolved = simulateResolve(transactionId, outcome === 'FAILED' ? 'FAILED' : 'SUCCESS');
+    if (!resolved) return res.status(404).json({ error: 'transaction not found' });
+    return res.status(200).json({ success: true, transaction: resolved });
+  }
+
+  // --- 16. TM-PICKNPAY: ERP LIVE STOCK ---
+  if (pathname === '/erp/stock') {
+    const storeId = (req.query?.storeId as any) || 'TM_PNP';
+    const sku = req.query?.sku as string;
+    if (!sku) return res.status(400).json({ error: 'sku is required' });
+    const level = await checkStock(storeId, sku);
+    return res.status(200).json({ success: true, level });
+  }
+
+  if (pathname === '/erp/substitute') {
+    const sku = req.query?.sku as string;
+    if (!sku) return res.status(400).json({ error: 'sku is required' });
+    const substitute = await findSubstitute(sku);
+    return res.status(200).json({ success: true, substitute });
+  }
+
+  if (pathname === '/erp/verify-checkout' && req.method === 'POST') {
+    const { items } = req.body || {};
+    const result = await verifyAvailableAtCheckout(items || []);
+    return res.status(200).json(result);
+  }
+
+  // --- 17. TM-PICKNPAY: B2B BULK ORDERING ---
+  if (pathname === '/orders/bulk-parse' && req.method === 'POST') {
+    const { text, useAI = false } = req.body || {};
+    if (!text) return res.status(400).json({ error: 'text is required' });
+    let items = parseBulkOrderText(text);
+    if (items.length === 0 && useAI) {
+      const aiItems = await parseBulkOrderTextWithAI(text);
+      if (aiItems) items = aiItems;
+    }
+    return res.status(200).json({ success: true, items });
+  }
+
+  if (pathname === '/orders/vendor-allocate' && req.method === 'POST') {
+    if (!requireSharedSecret(req, res)) return;
+    const { productId, requestedQty } = req.body || {};
+    if (!productId || !requestedQty) return res.status(400).json({ error: 'productId and requestedQty are required' });
+    const result = allocateFromBatch(productId, Number(requestedQty));
+    return res.status(result.success ? 200 : 409).json(result);
+  }
+
+  // --- 18. TM-PICKNPAY: DELIVERY ZONES & HUB-AND-SPOKE ROUTING ---
+  if (pathname === '/delivery/zones') {
+    return res.status(200).json({ success: true, zones: listZones() });
+  }
+
+  if (pathname === '/delivery/route' && req.method === 'POST') {
+    const { accountType, zoneId, orderValueZWG } = (req.body || {}) as { accountType?: B2BAccountType; zoneId?: string; orderValueZWG?: number };
+    if (!zoneId) return res.status(400).json({ error: 'zoneId is required' });
+    const decision = routeFulfillment({ accountType, zoneId, orderValueZWG });
+    return res.status(200).json({ success: true, ...decision });
+  }
+
+  // --- 19. TM-PICKNPAY: B2B ACCOUNT RECOGNITION ---
+  if (pathname === '/b2b/account') {
+    const phone = req.query?.phone as string;
+    if (!phone) return res.status(400).json({ error: 'phone is required' });
+    const account = findB2BAccount(phone);
+    return res.status(200).json({ success: true, account });
   }
 
   // Fallback 404 for unhandled API routes

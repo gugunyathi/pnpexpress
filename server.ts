@@ -8,6 +8,13 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from './src/data/products';
 import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from './server/models';
 import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from './server/coinbaseCheckout';
+import { getWalletBalances, getVoucherBalances, walletCheckout, debitWallet, creditVoucherFromRemittance, getRemittanceLog } from './server/walletLedger';
+import { requestToPay, payout, simulateResolve, verifyEcoCashWebhookSignature } from './server/ecocash';
+import { checkStock, findSubstitute, verifyAvailableAtCheckout } from './server/erpStock';
+import { parseBulkOrderText, parseBulkOrderTextWithAI } from './server/bulkOrderParser';
+import { listZones, routeFulfillment } from './server/deliveryZones';
+import { allocateFromBatch } from './server/vendorAllocation';
+import { findB2BAccount } from './server/b2bAccounts';
 import { 
   CartItem, 
   Product, 
@@ -34,6 +41,23 @@ import {
 } from './server/db';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Server-to-server guard for endpoints that move wallet/voucher balances —
+// mirrors the same check in api/index.ts (the Vercel serverless entry).
+// Both entry points must stay in sync; this one was initially missed here.
+function requireSharedSecret(req: Request, res: Response): boolean {
+  const expected = process.env.MOJA_PNP_SHARED_SECRET;
+  if (!expected) {
+    res.status(503).json({ error: 'MOJA_PNP_SHARED_SECRET not configured on server' });
+    return false;
+  }
+  const provided = req.headers['x-moja-shared-secret'];
+  if (provided !== expected) {
+    res.status(401).json({ error: 'unauthorized' });
+    return false;
+  }
+  return true;
+}
 
 // Server-side Gemini initialization
 const ai = new GoogleGenAI({
@@ -984,7 +1008,7 @@ async function startServer() {
     try {
       const rawPayload = JSON.stringify(req.body);
       const signatureHeader = (req.headers['x-hook0-signature'] as string) || (req.headers['x-cc-webhook-signature'] as string) || (req.headers['x-cb-signature'] as string);
-      const secret = process.env.COINBASE_WEBHOOK_SECRET || 'sec_wh_cdp_pnpexpress_2026';
+      const secret = process.env.COINBASE_WEBHOOK_SECRET || '';
 
       const isValid = verifyWebhookSignature(rawPayload, signatureHeader, secret, req.headers as any);
 
@@ -2203,6 +2227,146 @@ Return a JSON object with:
   // -------------------------------------------------------------
   app.get('/api/members', (req: Request, res: Response) => {
     res.json({ members: INITIAL_MEMBERS });
+  });
+
+  // -------------------------------------------------------------
+  // 16. TM-PICKNPAY: WALLET (multi-currency, open)
+  // -------------------------------------------------------------
+  app.get('/api/wallet/balances', (req: Request, res: Response) => {
+    const phone = (req.query.phone as string) || 'demo';
+    res.json({ success: true, phone, balances: getWalletBalances(phone) });
+  });
+
+  app.post('/api/wallet/checkout', async (req: Request, res: Response) => {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, totalZWG } = req.body || {};
+    if (!phone || !totalZWG) return res.status(400).json({ error: 'phone and totalZWG are required' });
+    const result = await walletCheckout(phone, Number(totalZWG));
+    res.status(result.success ? 200 : 402).json(result);
+  });
+
+  // -------------------------------------------------------------
+  // 17. TM-PICKNPAY: VOUCHER (closed-loop, remittance-fed only)
+  // -------------------------------------------------------------
+  app.get('/api/voucher/balance', (req: Request, res: Response) => {
+    const phone = (req.query.phone as string) || 'demo';
+    res.json({ success: true, phone, balances: getVoucherBalances(phone) });
+  });
+
+  app.post('/api/remittance/webhook', async (req: Request, res: Response) => {
+    if (!requireSharedSecret(req, res)) return;
+    const { source, recipientPhone, amount, currency, reference } = req.body || {};
+    if (!source || !recipientPhone || !amount || !currency || !reference) {
+      return res.status(400).json({ error: 'source, recipientPhone, amount, currency, reference are required' });
+    }
+    const balances = await creditVoucherFromRemittance(recipientPhone, source, Number(amount), currency, reference);
+    res.json({ success: true, balances });
+  });
+
+  app.get('/api/remittance/log', (req: Request, res: Response) => {
+    res.json({ success: true, log: getRemittanceLog(req.query.phone as string | undefined) });
+  });
+
+  // -------------------------------------------------------------
+  // 18. TM-PICKNPAY: ECOCASH ON/OFF-RAMP
+  // -------------------------------------------------------------
+  app.post('/api/ecocash/onramp', async (req: Request, res: Response) => {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, amount, currency = 'ZWG' } = req.body || {};
+    if (!phone || !amount) return res.status(400).json({ error: 'phone and amount are required' });
+    const txn = await requestToPay(phone, Number(amount), currency);
+    res.json({ success: true, transaction: txn, message: 'Request-to-pay sent to your EcoCash number. Approve the USSD prompt to complete funding (demo mode — auto-resolves).' });
+  });
+
+  app.post('/api/ecocash/offramp', async (req: Request, res: Response) => {
+    if (!requireSharedSecret(req, res)) return;
+    const { phone, amount, currency = 'ZWG' } = req.body || {};
+    if (!phone || !amount) return res.status(400).json({ error: 'phone and amount are required' });
+    // Debit exactly the requested currency/amount — not a ZWG-first
+    // FX-fallback order settlement (walletCheckout is for cart checkout).
+    const debit = await debitWallet(phone, currency, Number(amount));
+    if (!debit.success) return res.status(402).json({ success: false, reason: debit.reason, balances: debit.balances });
+    const txn = await payout(phone, Number(amount), currency);
+    res.json({ success: true, transaction: txn, balances: debit.balances });
+  });
+
+  app.post('/api/ecocash/webhook', async (req: Request, res: Response) => {
+    const rawPayload = JSON.stringify(req.body || {});
+    const signatureHeader = req.headers['x-ecocash-signature'] as string | undefined;
+    if (!verifyEcoCashWebhookSignature(rawPayload, signatureHeader)) {
+      return res.status(401).json({ error: 'invalid signature' });
+    }
+    const { transactionId, outcome } = req.body || {};
+    const resolved = simulateResolve(transactionId, outcome === 'FAILED' ? 'FAILED' : 'SUCCESS');
+    if (!resolved) return res.status(404).json({ error: 'transaction not found' });
+    res.json({ success: true, transaction: resolved });
+  });
+
+  // -------------------------------------------------------------
+  // 19. TM-PICKNPAY: ERP LIVE STOCK
+  // -------------------------------------------------------------
+  app.get('/api/erp/stock', async (req: Request, res: Response) => {
+    const storeId = (req.query.storeId as StoreId) || 'TM_PNP';
+    const sku = req.query.sku as string;
+    if (!sku) return res.status(400).json({ error: 'sku is required' });
+    const level = await checkStock(storeId, sku);
+    res.json({ success: true, level });
+  });
+
+  app.get('/api/erp/substitute', async (req: Request, res: Response) => {
+    const sku = req.query.sku as string;
+    if (!sku) return res.status(400).json({ error: 'sku is required' });
+    const substitute = await findSubstitute(sku);
+    res.json({ success: true, substitute });
+  });
+
+  app.post('/api/erp/verify-checkout', async (req: Request, res: Response) => {
+    const result = await verifyAvailableAtCheckout(req.body?.items || []);
+    res.json(result);
+  });
+
+  // -------------------------------------------------------------
+  // 20. TM-PICKNPAY: B2B BULK ORDERING
+  // -------------------------------------------------------------
+  app.post('/api/orders/bulk-parse', async (req: Request, res: Response) => {
+    const { text, useAI = false } = req.body || {};
+    if (!text) return res.status(400).json({ error: 'text is required' });
+    let items = parseBulkOrderText(text);
+    if (items.length === 0 && useAI) {
+      const aiItems = await parseBulkOrderTextWithAI(text);
+      if (aiItems) items = aiItems;
+    }
+    res.json({ success: true, items });
+  });
+
+  app.post('/api/orders/vendor-allocate', (req: Request, res: Response) => {
+    if (!requireSharedSecret(req, res)) return;
+    const { productId, requestedQty } = req.body || {};
+    if (!productId || !requestedQty) return res.status(400).json({ error: 'productId and requestedQty are required' });
+    const result = allocateFromBatch(productId, Number(requestedQty));
+    res.status(result.success ? 200 : 409).json(result);
+  });
+
+  // -------------------------------------------------------------
+  // 21. TM-PICKNPAY: DELIVERY ZONES & HUB-AND-SPOKE ROUTING
+  // -------------------------------------------------------------
+  app.get('/api/delivery/zones', (req: Request, res: Response) => {
+    res.json({ success: true, zones: listZones() });
+  });
+
+  app.post('/api/delivery/route', (req: Request, res: Response) => {
+    const { accountType, zoneId, orderValueZWG } = req.body || {};
+    if (!zoneId) return res.status(400).json({ error: 'zoneId is required' });
+    res.json({ success: true, ...routeFulfillment({ accountType, zoneId, orderValueZWG }) });
+  });
+
+  // -------------------------------------------------------------
+  // 22. TM-PICKNPAY: B2B ACCOUNT RECOGNITION
+  // -------------------------------------------------------------
+  app.get('/api/b2b/account', (req: Request, res: Response) => {
+    const phone = req.query.phone as string;
+    if (!phone) return res.status(400).json({ error: 'phone is required' });
+    res.json({ success: true, account: findB2BAccount(phone) });
   });
 
   // -------------------------------------------------------------

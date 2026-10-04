@@ -133,7 +133,84 @@ export interface VoiceAIResult {
 export interface ExchangeRates {
   USD_ZAR: number;
   USD_ZWG: number;
+  USD_EUR: number;
+  USD_GBP: number;
+  USD_AUD: number;
   lastUpdated: string;
+}
+
+// ── PicknPay / Moja Integration ─────────────────────────────────────────────
+// ZWG is the official ISO code for ZiG (Zimbabwe Gold) — reused rather than
+// introducing a second code for the same currency.
+
+export type WalletCurrency = 'ZWG' | 'USD' | 'ZAR' | 'EUR' | 'GBP' | 'AUD';
+
+export type WalletBalances = Record<WalletCurrency, number>;
+
+// Closed-loop store credit — intentionally NOT the same shape/table as the
+// open wallet. Only ZWG/USD per the TM Pick n Pay requirement that inbound
+// remittance value never behaves like an open-ended financial wallet.
+export type VoucherCurrency = 'ZWG' | 'USD';
+export type VoucherBalances = Record<VoucherCurrency, number>;
+
+export type RemittanceSource = 'ECOCASH' | 'MUKURU' | 'INNBUCKS' | 'OMARI';
+
+export interface RemittanceTransaction {
+  id: string;
+  source: RemittanceSource;
+  recipientPhone: string;
+  amount: number;
+  currency: VoucherCurrency;
+  reference: string;
+  status: 'PENDING' | 'CREDITED' | 'REJECTED';
+  receivedAt: string;
+}
+
+export type EcoCashDirection = 'ONRAMP' | 'OFFRAMP';
+
+export interface EcoCashTransaction {
+  id: string;
+  direction: EcoCashDirection;
+  phone: string;
+  amount: number;
+  currency: VoucherCurrency;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED';
+  reference: string;
+  createdAt: string;
+}
+
+export type B2BAccountType = 'SCHOOL' | 'CORPORATE' | 'LODGE' | 'VENDOR';
+
+export interface B2BAccount {
+  id: string;
+  name: string;
+  type: B2BAccountType;
+  phone: string;
+  city: string;
+  defaultFulfillment: 'STORE' | 'HUB';
+  dailyBatchAllocationId?: string;
+}
+
+export type OrderTrackingStatus = 'ORDERED' | 'PACKED' | 'DISPATCHED' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
+
+export type FulfillmentRoute = 'STORE' | 'HUB';
+
+export type DeliveryCapability = 'SCOOTER' | 'TRUCK' | 'TRUCK_BULK_DROP' | 'THIRD_PARTY_VENDOR';
+
+export interface DeliveryZone {
+  zoneId: string;
+  label: string;
+  city: string;
+  capabilities: DeliveryCapability[];
+}
+
+export interface ERPStockLevel {
+  storeId: StoreId;
+  sku: string;
+  liveQty: number;
+  lowStockThreshold: number;
+  erpSource: 'SAP' | 'ARCH_RETAIL' | 'SYSPRO' | 'MOCK';
+  lastSyncedAt: string;
 }
 
 export type PaymentRail = 'CONTIPAY' | 'PESAPAL' | 'COINBASE_USDC';

@@ -12,7 +12,7 @@ export interface CheckoutRequestPayload {
 export function verifyWebhookSignature(
   rawPayload: string,
   signatureHeader: string | null | undefined,
-  secret: string = process.env.COINBASE_WEBHOOK_SECRET || 'sec_wh_cdp_pnpexpress_2026',
+  secret: string = process.env.COINBASE_WEBHOOK_SECRET || '',
   headers: Record<string, string | string[] | undefined> = {},
   maxAgeMinutes = 5
 ): boolean {

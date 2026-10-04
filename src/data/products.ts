@@ -4,6 +4,9 @@ import { PRODUCT_BASE64_IMAGES } from './productImageBase64';
 export const INITIAL_EXCHANGE_RATES: ExchangeRates = {
   USD_ZAR: 18.50, // 1 USD = 18.50 South African Rand
   USD_ZWG: 26.80, // 1 USD = 26.80 Zimbabwe Gold (ZiG / ZWG)
+  USD_EUR: 0.92,
+  USD_GBP: 0.79,
+  USD_AUD: 1.54,
   lastUpdated: 'Live Interbank Rate'
 };
 
