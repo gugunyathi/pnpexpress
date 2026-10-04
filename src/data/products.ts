@@ -1,5 +1,5 @@
-import { Product, Member, ExchangeRates } from '../types';
-import { PRODUCT_BASE64_IMAGES } from './productImageBase64';
+import { Product, Member, ExchangeRates } from '../types.js';
+import { PRODUCT_BASE64_IMAGES } from './productImageBase64.js';
 
 export const INITIAL_EXCHANGE_RATES: ExchangeRates = {
   USD_ZAR: 18.50, // 1 USD = 18.50 South African Rand

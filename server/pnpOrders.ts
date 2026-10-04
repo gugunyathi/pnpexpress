@@ -1,4 +1,4 @@
-import type { OrderTrackingStatus, FulfillmentRoute } from '../src/types';
+import type { OrderTrackingStatus, FulfillmentRoute } from '../src/types.js';
 
 /**
  * TM-PicknPay order persistence — demo in-memory store (matches this repo's

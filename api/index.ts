@@ -1,17 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from '../src/data/products.ts';
-import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from '../server/models.ts';
-import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from '../server/coinbaseCheckout.ts';
-import { getWalletBalances, getVoucherBalances, walletCheckout, debitWallet, creditVoucherFromRemittance, getRemittanceLog } from '../server/walletLedger.ts';
-import { requestToPay, payout, payForOrder, settleTransaction, verifyEcoCashWebhookSignature } from '../server/ecocash.ts';
-import { checkStock, findSubstitute, verifyAvailableAtCheckout } from '../server/erpStock.ts';
-import { parseBulkOrderText, parseBulkOrderTextWithAI } from '../server/bulkOrderParser.ts';
-import { listZones, routeFulfillment } from '../server/deliveryZones.ts';
-import { allocateFromBatch } from '../server/vendorAllocation.ts';
-import { findB2BAccount } from '../server/b2bAccounts.ts';
-import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from '../server/pnpOrders.ts';
-import type { FulfillmentRoute } from '../src/types.ts';
-import type { RemittanceSource, VoucherCurrency, B2BAccountType } from '../src/types.ts';
+import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from '../src/data/products.js';
+import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from '../server/models.js';
+import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from '../server/coinbaseCheckout.js';
+import { getWalletBalances, getVoucherBalances, walletCheckout, debitWallet, creditVoucherFromRemittance, getRemittanceLog } from '../server/walletLedger.js';
+import { requestToPay, payout, payForOrder, settleTransaction, verifyEcoCashWebhookSignature } from '../server/ecocash.js';
+import { checkStock, findSubstitute, verifyAvailableAtCheckout } from '../server/erpStock.js';
+import { parseBulkOrderText, parseBulkOrderTextWithAI } from '../server/bulkOrderParser.js';
+import { listZones, routeFulfillment } from '../server/deliveryZones.js';
+import { allocateFromBatch } from '../server/vendorAllocation.js';
+import { findB2BAccount } from '../server/b2bAccounts.js';
+import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from '../server/pnpOrders.js';
+import type { FulfillmentRoute } from '../src/types.js';
+import type { RemittanceSource, VoucherCurrency, B2BAccountType } from '../src/types.js';
 
 // Shared In-Memory Demo Cart for Vercel Serverless Session
 const DEMO_CART = [

@@ -1,4 +1,4 @@
-import type { B2BAccount } from '../src/types';
+import type { B2BAccount } from '../src/types.js';
 
 /**
  * B2B institutional account registry — demo seed data. A real build would

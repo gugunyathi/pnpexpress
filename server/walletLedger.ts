@@ -1,5 +1,5 @@
-import type { WalletBalances, WalletCurrency, VoucherBalances, VoucherCurrency, RemittanceSource } from '../src/types';
-import { INITIAL_EXCHANGE_RATES } from '../src/data/products';
+import type { WalletBalances, WalletCurrency, VoucherBalances, VoucherCurrency, RemittanceSource } from '../src/types.js';
+import { INITIAL_EXCHANGE_RATES } from '../src/data/products.js';
 
 /**
  * Demo-mode ledger. In-memory, per-process — matches this repo's existing

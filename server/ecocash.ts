@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import type { EcoCashTransaction, VoucherCurrency } from '../src/types';
-import { creditWallet } from './walletLedger';
+import type { EcoCashTransaction, VoucherCurrency } from '../src/types.js';
+import { creditWallet } from './walletLedger.js';
 
 /**
  * EcoCash integration — DEMO MODE. No real EcoCash merchant/API credentials

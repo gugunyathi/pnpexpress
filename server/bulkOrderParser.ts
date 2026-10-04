@@ -1,4 +1,4 @@
-import { SAMPLE_PRODUCTS } from '../src/data/products';
+import { SAMPLE_PRODUCTS } from '../src/data/products.js';
 
 export interface BulkLineItem {
   rawText: string;

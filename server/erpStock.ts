@@ -1,5 +1,5 @@
-import type { StoreId, ERPStockLevel } from '../src/types';
-import { SAMPLE_PRODUCTS } from '../src/data/products';
+import type { StoreId, ERPStockLevel } from '../src/types.js';
+import { SAMPLE_PRODUCTS } from '../src/data/products.js';
 
 /**
  * ERP sync layer. MockERPAdapter stands in for a real SAP / Arch Retail /

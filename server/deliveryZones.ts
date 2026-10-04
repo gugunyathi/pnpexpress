@@ -1,4 +1,4 @@
-import type { DeliveryZone, FulfillmentRoute, B2BAccountType } from '../src/types';
+import type { DeliveryZone, FulfillmentRoute, B2BAccountType } from '../src/types.js';
 
 export const DELIVERY_ZONES: DeliveryZone[] = [
   { zoneId: 'harare-northern-suburbs', label: 'Northern Suburbs (Borrowdale, Arundel, Avondale)', city: 'Harare', capabilities: ['SCOOTER', 'TRUCK'] },
