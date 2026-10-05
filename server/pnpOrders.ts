@@ -1,4 +1,5 @@
 import type { OrderTrackingStatus, FulfillmentRoute } from '../src/types.js';
+import { resolveWindowLabel, getEarliestWindow } from './deliveryWindows.js';
 
 /**
  * TM-PicknPay order persistence — demo in-memory store (matches this repo's
@@ -23,6 +24,8 @@ export interface PnpOrder {
   route: FulfillmentRoute;
   storeId?: string;
   hubName?: string;
+  deliveryWindowId: string;
+  deliveryWindowLabel: string;
   status: OrderTrackingStatus;
   createdAt: string;
   updatedAt: string;
@@ -43,7 +46,15 @@ export function createOrder(params: {
   route: FulfillmentRoute;
   storeId?: string;
   hubName?: string;
+  deliveryWindowId?: string;
 }): PnpOrder {
+  // Typed/fallback checkout doesn't ask for a window (Parkinson's Law — the
+  // Flow checkout path is where picking one properly belongs); an unknown or
+  // omitted id falls back to the earliest real slot rather than a blank one.
+  const resolvedLabel = params.deliveryWindowId ? resolveWindowLabel(params.deliveryWindowId) : null;
+  const windowId = resolvedLabel ? params.deliveryWindowId! : getEarliestWindow().id;
+  const windowLabel = resolvedLabel ?? getEarliestWindow().label;
+
   const order: PnpOrder = {
     id: `PNP-ZW-${Math.floor(100000 + Math.random() * 900000)}`,
     phone: params.phone,
@@ -53,6 +64,8 @@ export function createOrder(params: {
     route: params.route,
     storeId: params.storeId,
     hubName: params.hubName,
+    deliveryWindowId: windowId,
+    deliveryWindowLabel: windowLabel,
     status: 'ORDERED',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

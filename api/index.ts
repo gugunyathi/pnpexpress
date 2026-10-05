@@ -11,6 +11,7 @@ import { allocateFromBatch } from '../server/vendorAllocation.js';
 import { findB2BAccount } from '../server/b2bAccounts.js';
 import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from '../server/pnpOrders.js';
 import { notifyPicknPayStatus } from '../server/picknpayNotify.js';
+import { getAvailableWindows } from '../server/deliveryWindows.js';
 import type { FulfillmentRoute } from '../src/types.js';
 import type { RemittanceSource, VoucherCurrency, B2BAccountType } from '../src/types.js';
 
@@ -745,6 +746,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ success: true, ...decision });
   }
 
+  if (pathname === '/delivery/windows') {
+    return res.status(200).json({ success: true, windows: getAvailableWindows() });
+  }
+
   // --- 19. TM-PICKNPAY: B2B ACCOUNT RECOGNITION ---
   if (pathname === '/b2b/account') {
     const phone = req.query?.phone as string;
@@ -756,14 +761,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // --- 20. TM-PICKNPAY: ORDER PERSISTENCE & PICKING QUEUES ---
   if (pathname === '/orders/pnp/create' && req.method === 'POST') {
     if (!requireSharedSecret(req, res)) return;
-    const { phone, items, totalZWG, address, route, storeId, hubName } = (req.body || {}) as {
+    const { phone, items, totalZWG, address, route, storeId, hubName, deliveryWindowId } = (req.body || {}) as {
       phone?: string; items?: Array<{ productId: string; name: string; qty: number; priceZWG: number }>;
-      totalZWG?: number; address?: string; route?: FulfillmentRoute; storeId?: string; hubName?: string;
+      totalZWG?: number; address?: string; route?: FulfillmentRoute; storeId?: string; hubName?: string; deliveryWindowId?: string;
     };
     if (!phone || !items?.length || !totalZWG || !address || !route) {
       return res.status(400).json({ error: 'phone, items, totalZWG, address, route are required' });
     }
-    const order = createOrder({ phone, items, totalZWG, address, route, storeId, hubName });
+    const order = createOrder({ phone, items, totalZWG, address, route, storeId, hubName, deliveryWindowId });
     return res.status(200).json({ success: true, order });
   }
 

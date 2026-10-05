@@ -18,6 +18,7 @@ import { allocateFromBatch } from './server/vendorAllocation';
 import { findB2BAccount } from './server/b2bAccounts';
 import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from './server/pnpOrders';
 import { notifyPicknPayStatus } from './server/picknpayNotify';
+import { getAvailableWindows } from './server/deliveryWindows';
 import { 
   CartItem, 
   Product, 
@@ -2376,6 +2377,10 @@ Return a JSON object with:
     res.json({ success: true, ...routeFulfillment({ accountType, zoneId, orderValueZWG }) });
   });
 
+  app.get('/api/delivery/windows', (req: Request, res: Response) => {
+    res.json({ success: true, windows: getAvailableWindows() });
+  });
+
   // -------------------------------------------------------------
   // 22. TM-PICKNPAY: B2B ACCOUNT RECOGNITION
   // -------------------------------------------------------------
@@ -2390,11 +2395,11 @@ Return a JSON object with:
   // -------------------------------------------------------------
   app.post('/api/orders/pnp/create', (req: Request, res: Response) => {
     if (!requireSharedSecret(req, res)) return;
-    const { phone, items, totalZWG, address, route, storeId, hubName } = req.body || {};
+    const { phone, items, totalZWG, address, route, storeId, hubName, deliveryWindowId } = req.body || {};
     if (!phone || !items?.length || !totalZWG || !address || !route) {
       return res.status(400).json({ error: 'phone, items, totalZWG, address, route are required' });
     }
-    const order = createOrder({ phone, items, totalZWG, address, route, storeId, hubName });
+    const order = createOrder({ phone, items, totalZWG, address, route, storeId, hubName, deliveryWindowId });
     res.json({ success: true, order });
   });
 
