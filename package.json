@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n BACKEND,FRONTEND -c cyan,green \"tsx server.ts\" \"vite --port 5173\"",
+    "dev": "tsx server.ts",
     "dev:backend": "tsx server.ts",
     "dev:frontend": "vite --port 5173",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
