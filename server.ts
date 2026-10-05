@@ -17,6 +17,7 @@ import { listZones, routeFulfillment } from './server/deliveryZones';
 import { allocateFromBatch } from './server/vendorAllocation';
 import { findB2BAccount } from './server/b2bAccounts';
 import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from './server/pnpOrders';
+import { notifyPicknPayStatus } from './server/picknpayNotify';
 import { 
   CartItem, 
   Product, 
@@ -2405,11 +2406,14 @@ Return a JSON object with:
     res.json({ success: true, order });
   });
 
-  app.post('/api/orders/pnp/advance', (req: Request, res: Response) => {
+  app.post('/api/orders/pnp/advance', async (req: Request, res: Response) => {
     if (!requireSharedSecret(req, res)) return;
     const { orderId } = req.body || {};
     if (!orderId) return res.status(400).json({ error: 'orderId is required' });
     const result = advanceOrder(orderId);
+    if (result.success && result.order) {
+      await notifyPicknPayStatus(result.order);
+    }
     res.status(result.success ? 200 : 409).json(result);
   });
 

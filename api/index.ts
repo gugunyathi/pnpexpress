@@ -10,6 +10,7 @@ import { listZones, routeFulfillment } from '../server/deliveryZones.js';
 import { allocateFromBatch } from '../server/vendorAllocation.js';
 import { findB2BAccount } from '../server/b2bAccounts.js';
 import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from '../server/pnpOrders.js';
+import { notifyPicknPayStatus } from '../server/picknpayNotify.js';
 import type { FulfillmentRoute } from '../src/types.js';
 import type { RemittanceSource, VoucherCurrency, B2BAccountType } from '../src/types.js';
 
@@ -779,6 +780,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { orderId } = req.body || {};
     if (!orderId) return res.status(400).json({ error: 'orderId is required' });
     const result = advanceOrder(orderId);
+    // Awaited, not fire-and-forget — this is a Vercel serverless function,
+    // which can freeze/exit the moment the response is sent, so a detached
+    // promise here is not guaranteed to ever actually complete.
+    if (result.success && result.order) {
+      await notifyPicknPayStatus(result.order);
+    }
     return res.status(result.success ? 200 : 409).json(result);
   }
 
