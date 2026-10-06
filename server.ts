@@ -17,6 +17,7 @@ import { listZones, routeFulfillment } from './server/deliveryZones';
 import { allocateFromBatch } from './server/vendorAllocation';
 import { findB2BAccount } from './server/b2bAccounts';
 import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from './server/pnpOrders';
+import { getBundles } from './server/bundles';
 import { notifyPicknPayStatus } from './server/picknpayNotify';
 import { getAvailableWindows } from './server/deliveryWindows';
 import { 
@@ -2427,6 +2428,13 @@ Return a JSON object with:
     const hub = req.query.hub === 'true';
     const queue = hub ? getHubQueue() : getStoreQueue(storeId ?? 'TM_PNP');
     res.json({ success: true, queue });
+  });
+
+  // -------------------------------------------------------------
+  // 24. TM-PICKNPAY: TRENDING SPECIALS / BUNDLES
+  // -------------------------------------------------------------
+  app.get('/api/bundles', (req: Request, res: Response) => {
+    res.json({ success: true, bundles: getBundles() });
   });
 
   // -------------------------------------------------------------

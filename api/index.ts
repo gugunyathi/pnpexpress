@@ -10,6 +10,7 @@ import { listZones, routeFulfillment } from '../server/deliveryZones.js';
 import { allocateFromBatch } from '../server/vendorAllocation.js';
 import { findB2BAccount } from '../server/b2bAccounts.js';
 import { createOrder, getOrder, advanceOrder, getStoreQueue, getHubQueue } from '../server/pnpOrders.js';
+import { getBundles } from '../server/bundles.js';
 import { notifyPicknPayStatus } from '../server/picknpayNotify.js';
 import { getAvailableWindows } from '../server/deliveryWindows.js';
 import type { FulfillmentRoute } from '../src/types.js';
@@ -799,6 +800,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hub = req.query?.hub === 'true';
     const queue = hub ? getHubQueue() : getStoreQueue(storeId ?? 'TM_PNP');
     return res.status(200).json({ success: true, queue });
+  }
+
+  // --- 21. TM-PICKNPAY: TRENDING SPECIALS / BUNDLES ---
+  if (pathname === '/bundles') {
+    return res.status(200).json({ success: true, bundles: getBundles() });
   }
 
   // Fallback 404 for unhandled API routes
