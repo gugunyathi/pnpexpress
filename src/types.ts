@@ -45,6 +45,12 @@ export interface Product {
   fulfillmentTag: FulfillmentTag;
   inStock: boolean;
   featured?: boolean;
+  slug?: string;
+  productUrl?: string;
+  dedicatedLink?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+  facebookImageUrl?: string;
 }
 
 export type DeliveryType = 'DOOR_DELIVERY' | 'STORE_PICKUP';

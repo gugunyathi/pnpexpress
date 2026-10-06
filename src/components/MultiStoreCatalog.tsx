@@ -33,6 +33,7 @@ interface MultiStoreCatalogProps {
   currency: Currency;
   lowDataMode: boolean;
   onAddToCart: (productId: string, memberId: string, note?: string, quantity?: number) => void;
+  onViewProduct?: (product: Product) => void;
 }
 
 const STORES: { id: StoreId | 'ALL'; name: string; region: string }[] = [
@@ -73,6 +74,7 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
   currency,
   lowDataMode,
   onAddToCart,
+  onViewProduct,
 }) => {
   const [activeTabMode, setActiveTabMode] = useState<'ALL' | 'BOUGHT_PREVIOUSLY'>('ALL');
   const [selectedStore, setSelectedStore] = useState<StoreId | 'ALL'>('ALL');
@@ -346,6 +348,7 @@ export const MultiStoreCatalog: React.FC<MultiStoreCatalogProps> = ({
             lowDataMode={lowDataMode}
             previouslyBoughtMeta={PREVIOUSLY_BOUGHT_META[product.id]}
             onAddToCart={onAddToCart}
+            onViewDetails={onViewProduct}
           />
         ))}
       </div>

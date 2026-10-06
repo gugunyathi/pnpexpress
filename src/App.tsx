@@ -9,6 +9,7 @@ import { MonorepoDocsModal } from './components/MonorepoDocsModal';
 import { FloatingBottomNav, NavTab } from './components/FloatingBottomNav';
 import { HeroCarousel } from './components/HeroCarousel';
 import { SmartBasketModal } from './components/SmartBasketModal';
+import { ProductDetailModal } from './components/ProductDetailModal';
 import { DiscoverView } from './components/DiscoverView';
 import { MyShopView } from './components/MyShopView';
 import { ProfileView } from './components/ProfileView';
@@ -21,7 +22,7 @@ import {
   ExchangeRates, 
   WhatsAppMessage 
 } from './types';
-import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from './data/products';
+import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES, getProductBySlugOrId } from './data/products';
 import { 
   Users, 
   Smartphone, 
@@ -56,6 +57,45 @@ export default function App() {
   const [showSmartBasket, setShowSmartBasket] = useState<boolean>(false);
   const [isBasketTilting, setIsBasketTilting] = useState<boolean>(false);
   const [showDocs, setShowDocs] = useState<boolean>(false);
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
+
+  const handleViewProduct = (product: Product) => {
+    setSelectedProductForDetail(product);
+    if (typeof window !== 'undefined' && window.history) {
+      window.history.pushState({ productId: product.id }, '', `/${product.slug || product.id}`);
+    }
+  };
+
+  const handleCloseProductDetail = () => {
+    setSelectedProductForDetail(null);
+    if (typeof window !== 'undefined' && window.history) {
+      window.history.pushState({}, '', '/');
+    }
+  };
+
+  // Dedicated Product Link Deep-Linking Check
+  useEffect(() => {
+    const checkUrlForProduct = () => {
+      if (typeof window === 'undefined') return;
+      const path = window.location.pathname.replace(/^\/+/, '');
+      if (path && path !== '' && !['cart', 'discover', 'myshop', 'profile', 'livecall'].includes(path)) {
+        const matched = getProductBySlugOrId(path);
+        if (matched) {
+          setSelectedProductForDetail(matched);
+        }
+      }
+      const searchParams = new URLSearchParams(window.location.search);
+      const prodParam = searchParams.get('product') || searchParams.get('p') || searchParams.get('slug');
+      if (prodParam) {
+        const matched = getProductBySlugOrId(prodParam);
+        if (matched) setSelectedProductForDetail(matched);
+      }
+    };
+
+    checkUrlForProduct();
+    window.addEventListener('popstate', checkUrlForProduct);
+    return () => window.removeEventListener('popstate', checkUrlForProduct);
+  }, []);
 
   const triggerBasketTilt = () => {
     setIsBasketTilting(true);
@@ -357,6 +397,7 @@ export default function App() {
             currency={currency}
             lowDataMode={lowDataMode}
             onAddToCart={handleAddToCart}
+            onViewProduct={handleViewProduct}
           />
         )}
 
@@ -482,6 +523,17 @@ export default function App() {
       />
 
       {/* Modals */}
+      <ProductDetailModal
+        product={selectedProductForDetail}
+        isOpen={!!selectedProductForDetail}
+        onClose={handleCloseProductDetail}
+        currency={currency}
+        members={members}
+        selectedMemberId={members[0]?.id || 'mem-1'}
+        onAddToCart={handleAddToCart}
+        onShowToast={triggerToast}
+      />
+
       <SmartBasketModal
         isOpen={showSmartBasket}
         onClose={() => setShowSmartBasket(false)}

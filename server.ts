@@ -234,8 +234,10 @@ async function startServer() {
     });
   });
 
-  // Initialize MongoDB Atlas connection
-  await connectDB();
+  // Initialize MongoDB Atlas connection asynchronously
+  connectDB().catch((err) => {
+    console.error('[MongoDB Init Error]:', err);
+  });
 
   // -------------------------------------------------------------
   // 1. HEALTH & METRICS

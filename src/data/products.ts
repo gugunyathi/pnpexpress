@@ -26,6 +26,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'Harare Express',
     inStock: true,
     featured: true,
+    slug: 'tastic_rice',
+    productUrl: 'https://www.pnpexpress.vercel.app/tastic_rice',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/tastic_rice',
+    imageUrl: 'https://www.pnpexpress.vercel.app/tastic_rice_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/tastic_rice_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/tastic_rice.jpg',
+      'https://www.facebook.com/tastic_rice_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/tastic_rice_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['tastic_rice']
   },
   {
@@ -43,6 +53,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'SA Export to Zim',
     inStock: true,
     featured: true,
+    slug: 'white_star_maize',
+    productUrl: 'https://www.pnpexpress.vercel.app/white_star_maize',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/white_star_maize',
+    imageUrl: 'https://www.pnpexpress.vercel.app/white_star_maize_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/white_star_maize_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/white_star_maize.jpg',
+      'https://www.facebook.com/white_star_maize_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/white_star_maize_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['white_star_maize']
   },
   {
@@ -60,6 +80,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'Bulawayo Click & Collect',
     inStock: true,
     featured: true,
+    slug: 'fruit_veg_box',
+    productUrl: 'https://www.pnpexpress.vercel.app/fruit_veg_box',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/fruit_veg_box',
+    imageUrl: 'https://www.pnpexpress.vercel.app/fruit_veg_box_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/fruit_veg_box_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/fruit_veg_box.jpg',
+      'https://www.facebook.com/fruit_veg_box_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/fruit_veg_box_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['fruit_veg_box']
   },
   {
@@ -76,6 +106,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '5L bottle',
     fulfillmentTag: 'SA Export to Zim',
     inStock: true,
+    slug: 'sunfoil_oil',
+    productUrl: 'https://www.pnpexpress.vercel.app/sunfoil_oil',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/sunfoil_oil',
+    imageUrl: 'https://www.pnpexpress.vercel.app/sunfoil_oil_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/sunfoil_oil_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/sunfoil_oil.jpg',
+      'https://www.facebook.com/sunfoil_oil_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/sunfoil_oil_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['sunfoil_oil_5l'] || PRODUCT_BASE64_IMAGES['sunfoil_oil']
   },
   {
@@ -93,6 +133,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'Harare Express',
     inStock: true,
     featured: true,
+    slug: 'huletts_sugar',
+    productUrl: 'https://www.pnpexpress.vercel.app/huletts_sugar',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/huletts_sugar',
+    imageUrl: 'https://www.pnpexpress.vercel.app/huletts_sugar_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/huletts_sugar_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/huletts_sugar.jpg',
+      'https://www.facebook.com/huletts_sugar_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/huletts_sugar_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['huletts_sugar']
   },
   {
@@ -110,6 +160,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'Nationwide Zim',
     inStock: true,
     featured: true,
+    slug: 'mazoe_orange_crush',
+    productUrl: 'https://www.pnpexpress.vercel.app/mazoe_orange_crush',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/mazoe_orange_crush',
+    imageUrl: 'https://www.pnpexpress.vercel.app/mazoe_orange_crush_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/mazoe_orange_crush_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/mazoe_orange_crush.jpg',
+      'https://www.facebook.com/mazoe_orange_crush_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/mazoe_orange_crush_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['mazoe_orange_crush']
   },
   {
@@ -126,6 +186,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '100 tea bags',
     fulfillmentTag: 'Mutare Depot',
     inStock: true,
+    slug: 'tanganda_tea',
+    productUrl: 'https://www.pnpexpress.vercel.app/tanganda_tea',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/tanganda_tea',
+    imageUrl: 'https://www.pnpexpress.vercel.app/tanganda_tea_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/tanganda_tea_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/tanganda_tea.jpg',
+      'https://www.facebook.com/tanganda_tea_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/tanganda_tea_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['tanganda_tea']
   },
   {
@@ -143,6 +213,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     fulfillmentTag: 'SA Export to Zim',
     inStock: true,
     featured: true,
+    slug: 'solar_lighting_system',
+    productUrl: 'https://www.pnpexpress.vercel.app/solar_lighting_system',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/solar_lighting_system',
+    imageUrl: 'https://www.pnpexpress.vercel.app/solar_lighting_system_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/solar_lighting_system_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/solar_lighting_system.jpg',
+      'https://www.facebook.com/solar_lighting_system_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/solar_lighting_system_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['solar_lighting_system']
   },
   {
@@ -159,6 +239,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '6x1L carton',
     fulfillmentTag: 'Bulawayo Click & Collect',
     inStock: true,
+    slug: 'clover_milk',
+    productUrl: 'https://www.pnpexpress.vercel.app/clover_milk',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/clover_milk',
+    imageUrl: 'https://www.pnpexpress.vercel.app/clover_milk_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/clover_milk_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/clover_milk.jpg',
+      'https://www.facebook.com/clover_milk_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/clover_milk_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['clover_milk']
   },
   {
@@ -175,6 +265,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '500g bar',
     fulfillmentTag: 'Harare Express',
     inStock: true,
+    slug: 'sunlight_soap',
+    productUrl: 'https://www.pnpexpress.vercel.app/sunlight_soap',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/sunlight_soap',
+    imageUrl: 'https://www.pnpexpress.vercel.app/sunlight_soap_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/sunlight_soap_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/sunlight_soap.jpg',
+      'https://www.facebook.com/sunlight_soap_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/sunlight_soap_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['sunlight_soap']
   },
   {
@@ -191,6 +291,16 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '2kg fresh cut',
     fulfillmentTag: 'Harare Express',
     inStock: true,
+    slug: 'fresh_beef',
+    productUrl: 'https://www.pnpexpress.vercel.app/fresh_beef',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/fresh_beef',
+    imageUrl: 'https://www.pnpexpress.vercel.app/fresh_beef_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/fresh_beef_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/fresh_beef.jpg',
+      'https://www.facebook.com/fresh_beef_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/fresh_beef_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['fresh_beef']
   },
   {
@@ -207,9 +317,25 @@ export const SAMPLE_PRODUCTS: Product[] = [
     unit: '56 diapers pack',
     fulfillmentTag: 'SA Export to Zim',
     inStock: true,
+    slug: 'pampers_pants',
+    productUrl: 'https://www.pnpexpress.vercel.app/pampers_pants',
+    dedicatedLink: 'https://www.pnpexpress.vercel.app/pampers_pants',
+    imageUrl: 'https://www.pnpexpress.vercel.app/pampers_pants_image_01.jpg',
+    imageUrls: [
+      'https://www.pnpexpress.vercel.app/pampers_pants_image_01.jpg',
+      'https://www.pnpexpress.vercel.app/images/pampers_pants.jpg',
+      'https://www.facebook.com/pampers_pants_image_001.jpg'
+    ],
+    facebookImageUrl: 'https://www.facebook.com/pampers_pants_image_001.jpg',
     image: PRODUCT_BASE64_IMAGES['pampers_pants']
   }
 ];
+
+export function getProductBySlugOrId(slugOrId: string): Product | undefined {
+  if (!slugOrId) return undefined;
+  const clean = slugOrId.toLowerCase().replace(/^\/+/, '').replace(/^product\//, '');
+  return SAMPLE_PRODUCTS.find(p => p.id.toLowerCase() === clean || p.slug?.toLowerCase() === clean);
+}
 
 export const INITIAL_MEMBERS: Member[] = [
   {
