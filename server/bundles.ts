@@ -30,6 +30,18 @@ export interface BundleItem {
 export interface Bundle {
   id: string;
   name: string;
+  /**
+   * WhatsApp interactive-list row titles hard-cap at 24 chars (360dialog
+   * silently rejects the whole list if exceeded, same cap enforced
+   * elsewhere in signal-desk-v4). A blind `name.slice(0, 24)` on the bulk
+   * bundles' full descriptive names drops the exact disambiguating detail
+   * those names exist to carry (e.g. "(10 x 5kg ≈ 50kg, not 500kg)") —
+   * found by audit 6 Oct 2026. This is the row title instead: always <=24
+   * chars, written to keep the real quantity visible pre-tap, not a
+   * truncation of `name`. Falls back to `name` itself (hamper's is already
+   * short enough to fit whole).
+   */
+  shortLabel: string;
   description: string;
   items: BundleItem[];
   priceUSD: number;
@@ -55,6 +67,7 @@ type BundleInput = Omit<Bundle, 'priceZWG'>;
 const TM_PICKNPAY_HAMPER: BundleInput = {
   id: 'tm-picknpay-hamper',
   name: 'TM Pick n Pay Hamper',
+  shortLabel: 'TM Pick n Pay Hamper',
   description:
     "A full household grocery hamper — 17 staples in one box. $2 off the $31 you'd pay for the same contents elsewhere.",
   items: [
@@ -103,6 +116,7 @@ const TM_PICKNPAY_HAMPER: BundleInput = {
 const MEALIE_MEAL_BULK_BUNDLE: BundleInput = {
   id: 'tm-bulk-mealie-meal',
   name: 'Mealie Meal Bulk Bundle — School/Institutional (10 x 5kg ≈ 50kg)',
+  shortLabel: 'Mealie Meal x10 (50kg)',
   description:
     'Approximates the discussed "10 x 50kg" school mealie meal order using 10x the real catalogue 5kg bag (White Star Super Maize Meal, closest real SKU — no 50kg bag exists in the live catalogue), totaling 50kg, not 500kg.',
   items: [{ name: 'White Star Super Maize Meal (5kg)', qty: 10 }],
@@ -113,6 +127,7 @@ const MEALIE_MEAL_BULK_BUNDLE: BundleInput = {
 const COOKING_OIL_BULK_BUNDLE: BundleInput = {
   id: 'tm-bulk-cooking-oil',
   name: '5L Cooking Oil x10 — School/Institutional Bundle',
+  shortLabel: 'Cooking Oil x10 (50L)',
   description:
     'Bulk cooking oil for schools and businesses — 10x Sunfoil Pure Sunflower Oil (5 Litres), the real catalogue match for the "10 by 5 litres" ask, 50L total.',
   items: [{ name: 'Sunfoil Pure Sunflower Oil (5 Litres)', qty: 10 }],
