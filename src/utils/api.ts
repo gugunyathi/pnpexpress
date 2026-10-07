@@ -107,6 +107,17 @@ export interface DepotLocation {
 // ----------------------------------------------------
 
 export const api = {
+  // 0. Telegram Mini App auth
+  async loginWithTelegram(initData: string): Promise<{ success: boolean; user: any; token: string }> {
+    const res = await fetch('/api/auth/telegram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData }),
+    });
+    if (!res.ok) throw new Error('Telegram login failed');
+    return res.json();
+  },
+
   // 1. Products & Catalog
   async getProducts(params?: {
     category?: string;

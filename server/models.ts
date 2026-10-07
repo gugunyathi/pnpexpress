@@ -31,6 +31,11 @@ export interface IUser extends Document {
   currencyPreference?: string;
   lowDataPreference?: boolean;
   walletBalanceUSD: number;
+  /** Telegram numeric user id, as a string. Set only for accounts created via
+   * the Telegram Mini App login — sparse/unique so email-only accounts are
+   * unaffected. */
+  telegramId?: string;
+  telegramUsername?: string;
   createdAt: Date;
   lastLoginAt: Date;
 }
@@ -95,6 +100,8 @@ const UserSchema = new Schema<IUser>({
   currencyPreference: { type: String, default: 'GBP' },
   lowDataPreference: { type: Boolean, default: false },
   walletBalanceUSD: { type: Number, default: 245.00 },
+  telegramId: { type: String, unique: true, sparse: true, index: true },
+  telegramUsername: { type: String },
   createdAt: { type: Date, default: Date.now },
   lastLoginAt: { type: Date, default: Date.now }
 });

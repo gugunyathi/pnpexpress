@@ -2,6 +2,10 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import {initTelegramAuth} from './utils/telegram';
+
+// No-op outside a real Telegram client — see utils/telegram.ts.
+void initTelegramAuth();
 
 // Prevent harmless WebSocket/HMR and network disconnect error popups in preview sandbox
 window.addEventListener('unhandledrejection', (event) => {

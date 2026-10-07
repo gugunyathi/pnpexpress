@@ -8,6 +8,8 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 import { SAMPLE_PRODUCTS, INITIAL_MEMBERS, INITIAL_EXCHANGE_RATES } from './src/data/products';
 import { connectDB, User, ActivityLog, OrderModel, CDPWallet } from './server/models';
+import { signAuthToken, verifyAuthToken, extractBearerToken } from './server/authToken';
+import { verifyInitData } from './server/telegramAuth';
 import { createCoinbaseCheckout, verifyWebhookSignature, refundCoinbaseCheckout } from './server/coinbaseCheckout';
 import { getWalletBalances, getVoucherBalances, walletCheckout, debitWallet, creditVoucherFromRemittance, getRemittanceLog } from './server/walletLedger';
 import { requestToPay, payout, payForOrder, settleTransaction, verifyEcoCashWebhookSignature } from './server/ecocash';
@@ -316,7 +318,7 @@ async function startServer() {
       res.status(201).json({
         success: true,
         user: newUser,
-        token: `jwt_token_${newUser._id}`,
+        token: signAuthToken(newUser._id.toString()),
         cdpWallet: {
           address: walletAddress,
           projectId: process.env.VITE_CDP_PROJECT_ID,
@@ -374,7 +376,7 @@ async function startServer() {
       res.json({
         success: true,
         user,
-        token: `jwt_token_${user._id}`,
+        token: signAuthToken(user._id.toString()),
         cdpWallet
       });
     } catch (err: any) {
@@ -383,12 +385,70 @@ async function startServer() {
     }
   });
 
+  // Telegram Mini App login — see api/index.ts's /auth/telegram for the full
+  // rationale (initData is HMAC-signed by Telegram itself, stronger proof of
+  // identity than the email/password path above, which has no password check
+  // at all). Kept identical between the two entrypoints since they aren't a
+  // shared module.
+  app.post('/api/auth/telegram', async (req: Request, res: Response) => {
+    try {
+      const { initData } = req.body;
+      if (!initData) return res.status(400).json({ error: 'initData is required' });
+
+      const botToken = process.env.PNP_TELEGRAM_BOT_TOKEN ?? '';
+      const verified = verifyInitData(initData, botToken);
+      if (!verified) return res.status(401).json({ error: 'Invalid or expired Telegram initData' });
+
+      const telegramId = String(verified.user.id);
+      let user = await User.findOne({ telegramId });
+      if (!user) {
+        const displayName = [verified.user.first_name, verified.user.last_name].filter(Boolean).join(' ')
+          || verified.user.username || `telegram_${telegramId}`;
+        const walletAddress = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        user = await User.create({
+          email: `telegram-${telegramId}@tm-picknpay.local`,
+          name: displayName,
+          role: 'Sponsor / Diaspora',
+          walletAddress,
+          cdpProjectId: process.env.VITE_CDP_PROJECT_ID,
+          telegramId,
+          telegramUsername: verified.user.username,
+        });
+      } else {
+        user.lastLoginAt = new Date();
+        if (verified.user.username) user.telegramUsername = verified.user.username;
+        await user.save();
+      }
+
+      await ActivityLog.create({
+        userId: user._id.toString(),
+        userEmail: user.email,
+        action: 'TELEGRAM_LOGIN_SUCCESS',
+        details: { telegramId },
+        ip: req.ip,
+      });
+
+      res.json({
+        success: true,
+        user,
+        token: signAuthToken(user._id.toString()),
+      });
+    } catch (err: any) {
+      console.error('[Auth Telegram Error]:', err);
+      res.status(500).json({ error: err.message || 'Failed to log in with Telegram' });
+    }
+  });
+
+  // FIX (7 Oct 2026): this used to be `User.findOne().sort({ lastLoginAt: -1 })`
+  // — ignored whatever the caller sent and returned whoever logged in most
+  // recently, globally. A real cross-user data leak. Now requires a valid
+  // signed bearer token and looks up that exact user.
   app.get('/api/auth/me', async (req: Request, res: Response) => {
     try {
-      const user = await User.findOne().sort({ lastLoginAt: -1 });
-      if (!user) {
-        return res.json({ authenticated: false });
-      }
+      const verified = verifyAuthToken(extractBearerToken(req.headers.authorization));
+      if (!verified) return res.status(401).json({ authenticated: false });
+      const user = await User.findById(verified.userId);
+      if (!user) return res.status(401).json({ authenticated: false });
       const cdpWallet = await CDPWallet.findOne({ userId: user._id.toString() });
       res.json({
         authenticated: true,
@@ -400,9 +460,14 @@ async function startServer() {
     }
   });
 
+  // FIX (7 Oct 2026): this used to return every user's activity log to any
+  // caller, unscoped. Now requires a valid bearer token and returns only that
+  // user's own sessions.
   app.get('/api/auth/sessions', async (req: Request, res: Response) => {
     try {
-      const logs = await ActivityLog.find().sort({ timestamp: -1 }).limit(50);
+      const verified = verifyAuthToken(extractBearerToken(req.headers.authorization));
+      if (!verified) return res.status(401).json({ error: 'Unauthorized' });
+      const logs = await ActivityLog.find({ userId: verified.userId }).sort({ timestamp: -1 }).limit(50);
       res.json({ success: true, count: logs.length, sessions: logs });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
